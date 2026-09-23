@@ -966,9 +966,7 @@ body {
 
 
 
-/* =========================
-   PRINCIPLES
-========================= */
+
 
 .principles {
     background: #2b080d;
@@ -983,9 +981,7 @@ body {
 }
 
 
-/* =========================
-   HEADER
-========================= */
+
 
 .principles-header {
     text-align: center;
@@ -1014,9 +1010,7 @@ body {
 }
 
 
-/* =========================
-   CARDS
-========================= */
+
 
 .principles-grid {
     display: grid;
@@ -1027,9 +1021,7 @@ body {
 }
 
 
-/* =========================
-   CARD
-========================= */
+
 
 .principle-card {
     min-height: 250px;
@@ -1057,9 +1049,6 @@ body {
 }
 
 
-/* =========================
-   ICON
-========================= */
 
 .principle-icon {
     width: 50px;
@@ -1079,9 +1068,7 @@ body {
 }
 
 
-/* =========================
-   CARD TITLE
-========================= */
+
 
 .principle-card-title {
     margin: 0 0 15px;
@@ -1095,9 +1082,7 @@ body {
 }
 
 
-/* =========================
-   CARD DESCRIPTION
-========================= */
+
 
 .principle-card-desc {
     margin: 0;
@@ -1109,9 +1094,7 @@ body {
 }
 
 
-/* =========================
-   BANNER / IMAGE
-========================= */
+
 
 .principles-banner {
     position: relative;
@@ -1140,7 +1123,7 @@ body {
 }
 
 
-/* затемнення картинки */
+
 
 .principles-banner::after {
     content: "";
@@ -1159,9 +1142,7 @@ body {
 }
 
 
-/* =========================
-   TABLET
-========================= */
+
 
 @media (max-width: 1000px) {
 
@@ -1183,9 +1164,7 @@ body {
 }
 
 
-/* =========================
-   MOBILE
-========================= */
+
 
 @media (max-width: 600px) {
 
@@ -1214,4 +1193,101 @@ body {
         height: 250px;
         margin-top: 45px;
     }
+}
+
+
+
+
+
+
+
+.contacts {
+    background: #140608;
+    color: #f3e8d3;
+}
+
+.contacts-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #97646b;
+}
+
+.contacts-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: #f3e8d3;
+}
+
+.contacts-icon {
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.contacts-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #6e4b51;
+}
+
+.contacts-text {
+    color: #d8c8c4;
+    font-size: 15px;
+}
+
+.contacts-form-card {
+    background: #1a080a;
+    border: 1px solid #3b2024;
+    border-radius: 8px;
+}
+
+.contacts-form-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px;
+    color: #f3e8d3;
+}
+
+.contacts-form-hint {
+    color: #bda5a7;
+    font-size: 14px;
+}
+
+.contacts-input {
+    background: transparent;
+    border: 1px solid #4a2a30;
+    color: #f3e8d3;
+    border-radius: 4px;
+    padding: 12px 14px;
+}
+
+.contacts-input::placeholder {
+    color: #8a7376;
+}
+
+.contacts-input:focus {
+    background: transparent;
+    border-color: #c45a72;
+    color: #f3e8d3;
+    box-shadow: none;
+}
+
+.contacts-submit {
+    background: #c45a72;
+    border: none;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+}
+
+.contacts-submit:hover {
+    background: #d46a82;
+    color: #ffffff;
 }
