@@ -1,13 +1,13 @@
+import { Link } from "react-router-dom";
 
-
-export default function Header(){
+export default function Header({cart}){
       return(
           <header className="header">
               <div className="header-container">
-                  <div className="logo">
+                  <Link to="/" className="logo">
                       <span className="logo-top">ГАСТРОНОМ</span>
                       <span className="logo-main">ЧЕРЕМШИНА<span className="trademark">™</span></span>
-                  </div>
+                  </Link>
               <nav className="nav-menu">
                   <a href="#products"></a>
                   <a href="#about"></a>
@@ -16,9 +16,9 @@ export default function Header(){
               </nav>
 
                <div className="header-actions">
-                   <button className="cart-btn" aria-lable="Кошик">🛒<span className="cart-badge" >0</span>
-                   </button>
-                   <button className="btn-login">Увійти</button>
+                   <Link to="/cart" className="cart-btn" aria-label="Кошик">🛒<span className="cart-badge">{cart?.length ?? 0}</span>
+                   </Link>
+                   <Link to="/login" className="btn-login">Увійти</Link>
                    <button className="btn-order">Замовити</button>
                </div>
 

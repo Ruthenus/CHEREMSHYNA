@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 
 const categories = [
-    { id: 'sausages', label: 'Ковбаси', icon: '🥖' },
-    { id: 'smoked', label: 'Копченості', icon: '🥓' },
-    { id: 'poultry', label: 'Птиця', icon: '🍗' },
-    { id: 'pork', label: 'Свинина', icon: '🥩' },
-    { id: 'cheeses', label: 'Сири', icon: '🧀' },
-    { id: 'butter', label: 'Масло та жири', icon: '🧈' },
-    { id: 'bakery', label: 'Хліб і випічка', icon: '🍞' },
-    { id: 'drinks', label: 'Соки та напої', icon: '🧃' },
-    { id: 'sauces', label: 'Соуси та приправи', icon: '🧂' },
-    { id: 'veggies', label: 'Свіжі овочі', icon: '🥦' },
-    { id: 'canned', label: 'Консервація', icon: '🥫' },
+    { id: 'sausages', category: 'sausages', label: 'Ковбаси', icon: '🥖' },
+    { id: 'smoked', category: 'smoked', label: 'Копченості', icon: '🥓' },
+    { id: 'poultry', category: 'poultry', label: 'Птиця', icon: '🍗' },
+    { id: 'pork', category: 'pork', label: 'Свинина', icon: '🥩' },
+    { id: 'cheeses', category: 'cheeses', label: 'Сири', icon: '🧀' },
+    { id: 'butter', category: 'butter', label: 'Масло та жири', icon: '🧈' },
+    { id: 'bakery', category: 'bakery', label: 'Хліб і випічка', icon: '🍞' },
+    { id: 'drinks', category: 'drinks', label: 'Соки та напої', icon: '🧃' },
+    { id: 'sauces', category: 'sauces', label: 'Соуси та приправи', icon: '🧂' },
+    { id: 'veggies', category: 'veggies', label: 'Свіжі овочі', icon: '🥦' },
+    { id: 'canned', category: 'canned', label: 'Консервація', icon: '🥫' },
 ];
 
 const mockProducts = [
@@ -49,7 +49,7 @@ const mockProducts = [
     },
 ];
 
-export default function Products() {
+export default function Products({addToCart}) {
     const [activeCategory, setActiveCategory] = useState('sausages');
 
     const filteredProducts = mockProducts.filter(
@@ -133,7 +133,10 @@ export default function Products() {
                                         </span>
                                     </div>
 
-                                    <button className="btn-buy">
+                                    <button className="btn-buy"
+                                        onClick ={() => addToCart(product)}
+                                    >
+
                                         КУПИТИ
                                     </button>
                                 </div>
