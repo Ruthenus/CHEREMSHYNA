@@ -2,7 +2,7 @@ import meates from "../assets/image/meates.png";
 
 export default function About(){
     return(
-        <div className="about">
+        <div id="about" className="about">
             <div className="about-container">
               <div className="about-img-wrapper">
                   <img src={meates} alt="М'ясні вироби" className="about-image" />

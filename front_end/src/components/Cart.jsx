@@ -1,7 +1,60 @@
-export default function Cart({ cart }) {
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+
+export default function Cart({ cart, setCart }) {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
     const total = cart.reduce((sum, product) => {
-        return sum + product.price;
+        return sum + product.price * (product.quantity || 1);
     }, 0);
+
+    function handleCheckout() {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
+        navigate('/order');
+
+    }
+    function increaseQuantityIndex(index){
+        setCart(prevCart =>
+            prevCart.map((product, i) =>
+            i === index
+                ?{
+                   ...product,
+                   quantity: (product.quantity || 1)+ 1
+                }
+                : product
+            )
+        );
+    }
+
+   function decreaseQuantityIndex(index){
+        setCart(prevCart =>
+                 prevCart.map((product, i) => {
+                     if(i !== index) return product;
+
+                     const quantity = product.quantity || 1;
+
+                     return{
+                         ...product,
+                         quantity: quantity - 1
+                     };
+                 })
+                     .filter(product => product.quantity > 0)
+
+        );
+   }
+
+   function removeQuantityIndex(index){
+        setCart(prevCart =>
+           prevCart.filter((product, i) => i !== index)
+        );
+   }
+
+
 
     return (
         <div className="cart-page">
@@ -12,7 +65,11 @@ export default function Cart({ cart }) {
                     <h1>Кошик</h1>
 
                     {cart.length > 0 && (
-                        <button className="btn btn-outline-secondary">
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => setCart([])}
+                        >
                             Очистити кошик
                         </button>
                     )}
@@ -26,7 +83,7 @@ export default function Cart({ cart }) {
 
                     <div className="row g-4">
 
-                        {/* Товари */}
+
                         <div className="col-lg-8">
 
                             {cart.map((product, index) => (
@@ -48,23 +105,32 @@ export default function Cart({ cart }) {
                                             </h5>
 
                                             <p className="card-text">
-                                                {product.price} ₴ × 1 = {product.price} ₴
+                                                {product.price}  ₴ {product.quantity|| 1}
+                                                {' = '}
+                                                {product.price * (product.quantity || 1)} ₴
                                             </p>
                                         </div>
 
                                         <div className="d-flex align-items-center gap-2">
 
-                                            <button className="btn quantity-btn">
-                                                −
+                                            <button className="btn quantity-btn"
+                                                    onClick={() => decreaseQuantityIndex(index)}
+                                            >
+                                                -
                                             </button>
 
-                                            <span>1</span>
+                                            <span>{product.quantity || 1}</span>
 
-                                            <button className="btn quantity-btn">
+                                            <button className="btn quantity-btn"
+                                                    onClick={() => increaseQuantityIndex(index)}
+                                            >
                                                 +
                                             </button>
 
-                                            <button className="btn btn-link">
+                                            <button
+                                                className="btn btn-link"
+                                                onClick={() => removeQuantityIndex(index)}
+                                            >
                                                 ×
                                             </button>
 
@@ -79,7 +145,7 @@ export default function Cart({ cart }) {
                         </div>
 
 
-                        {/* Підсумок */}
+
                         <div className="col-lg-4">
 
                             <div className="card">
@@ -121,12 +187,12 @@ export default function Cart({ cart }) {
 
                                     </div>
 
-                                    <button className="btn btn-primary w-100 mt-4">
+                                    <button className="btn btn-primary w-100 mt-4" type="button" onClick={handleCheckout}>
                                         ОФОРМИТИ ЗАМОВЛЕННЯ
                                     </button>
 
                                     <p className="text-center mt-3 mb-0">
-                                        ← Продовжити покупки
+                                        <Link to="/" className="no-underline">← Продовжити покупки</Link>
                                     </p>
 
                                 </div>

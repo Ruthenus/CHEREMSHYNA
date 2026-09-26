@@ -13,7 +13,10 @@ import './App.css';
 
 import Login from './components/User/Login.jsx';
 import Register from './components/User/Register.jsx';
+import Cabinet from './components/User/Cabinet.jsx';
 import Cart from './components/Cart.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
+import Order from './components/Order.jsx';
 
 function App() {
     const [cart, setCart] = useState([]);
@@ -37,6 +40,7 @@ function App() {
 
 
       <BrowserRouter>
+          <AuthProvider>
           <Routes>
               <Route path="/"
 
@@ -59,7 +63,7 @@ function App() {
                   element={
                       <>
                           <Header cart={cart} />
-                          <Cart cart={cart} />
+                          <Cart cart={cart} setCart={setCart} />
                       </>
                   }
               />
@@ -81,8 +85,32 @@ function App() {
                       </>
                   }
               />
+              <Route
+                  path="/cabinet"
+                  element={
+                      <>
+                          <Header cart={cart} />
+                          <Cabinet />
+                      </>
+                  }
+              />
+              <Route
+                  path="/order"
+                  element={
+                      <>
+                          <Header cart={cart} />
+
+                          <Order
+                              cart={cart}
+                              setCart={setCart}
+                          />
+                      </>
+                  }
+              />
           </Routes>
 
+
+          </AuthProvider>
       </BrowserRouter>
   );
 }

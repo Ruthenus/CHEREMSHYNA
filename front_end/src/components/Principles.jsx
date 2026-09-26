@@ -31,7 +31,7 @@ const principlesData = [
 
 export default function Principles(){
     return(
-        <section className="principles">
+        <section id="quality" className="principles">
             <div className="princilpes-container">
 
 

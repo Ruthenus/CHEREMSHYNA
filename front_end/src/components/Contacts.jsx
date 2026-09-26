@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const contactItems = [
     {
         label: 'Адреса',
@@ -22,8 +24,34 @@ const contactItems = [
 ];
 
 export default function Contacts() {
+    const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState('');
+
     function handleSubmit(event) {
         event.preventDefault();
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        const name = data.get('name').trim();
+        const phone = data.get('phone').trim();
+        const order = data.get('order').trim();
+
+        setSubmitted(false);
+        setError('');
+
+        if (!name || !phone || !order) {
+            setError('Будь ласка, заповніть усі поля.');
+            return;
+        }
+
+        const digits = phone.replace(/\D/g, '');
+        if (!/^[+\d\s().-]+$/.test(phone) || digits.length < 10 || digits.length > 15) {
+            setError('Введіть коректний номер телефону: від 10 до 15 цифр.');
+            return;
+        }
+
+        // Frontend confirmation; connect an API before accepting real requests.
+        setSubmitted(true);
+        form.reset();
     }
 
     return (
@@ -61,12 +89,24 @@ export default function Contacts() {
                             </p>
 
                             <form onSubmit={handleSubmit}>
+                                {submitted && (
+                                    <div className="contacts-success mb-3" role="status">
+                                        ✓ Заявку надіслано! Дякуємо за звернення.
+                                    </div>
+                                )}
+                                {error && (
+                                    <p className="order-error mb-3" role="alert">
+                                        {error}
+                                    </p>
+                                )}
                                 <div className="mb-3">
                                     <input
                                         type="text"
                                         className="form-control contacts-input"
                                         placeholder="Ваше ім'я"
                                         name="name"
+                                        aria-label="Ваше ім’я"
+                                        autoComplete="name"
                                         required
                                     />
                                 </div>
@@ -76,6 +116,8 @@ export default function Contacts() {
                                         className="form-control contacts-input"
                                         placeholder="Номер телефону"
                                         name="phone"
+                                        aria-label="Номер телефону"
+                                        autoComplete="tel"
                                         required
                                     />
                                 </div>
@@ -84,7 +126,9 @@ export default function Contacts() {
                                         className="form-control contacts-input"
                                         placeholder="Що бажаєте замовити?"
                                         name="order"
+                                        aria-label="Що бажаєте замовити?"
                                         rows="3"
+                                        required
                                     />
                                 </div>
                                 <button type="submit" className="btn contacts-submit w-100">

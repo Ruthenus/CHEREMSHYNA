@@ -57,7 +57,7 @@ export default function Products({addToCart}) {
     );
 
     return (
-        <div className="products">
+        <div id="products" className="products">
             <div className="products-container">
                 <div className="products-content">
 

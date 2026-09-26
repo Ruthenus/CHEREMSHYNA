@@ -1,26 +1,41 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Login() {
+    const { user, login } = useAuth();
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         email: '',
         password: '',
     });
+    const [error, setError] = useState('');
+
+    if (user) {
+        return <Navigate to="/" replace />;
+    }
 
     function handleSubmit(event) {
         event.preventDefault();
+        setError('');
 
         if (!form.email) {
-            alert('Введіть email');
+            setError('Введіть email');
             return;
         }
 
         if (!form.password) {
-            alert('Введіть пароль');
+            setError('Введіть пароль');
             return;
         }
 
-        alert('Вхід успішний !');
+        const result = login(form);
+        if (!result.ok) {
+            setError(result.error);
+            return;
+        }
+
+        navigate('/');
     }
 
     function handleChange(event) {
@@ -55,6 +70,12 @@ export default function Login() {
                     </p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
+                        {error && (
+                            <div className="alert alert-danger py-2" role="alert">
+                                {error}
+                            </div>
+                        )}
+
                         <label className="auth-label" htmlFor="login-email">
                             Email
                         </label>
