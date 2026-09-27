@@ -7,7 +7,11 @@ function Avatar({ user }) {
 
     return (
         <span className="user-avatar">
-            {user.photo ? <img src={user.photo} alt={user.name} /> : <span>{letter}</span>}
+            {user.photo ? (
+                <img src={user.photo} alt={user.name} />
+            ) : (
+                <span>{letter}</span>
+            )}
         </span>
     );
 }
@@ -16,6 +20,7 @@ export default function Header({ cart }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [logoutError, setLogoutError] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -25,7 +30,10 @@ export default function Header({ cart }) {
         if (location.pathname !== '/' || !location.hash) return;
         const frame = requestAnimationFrame(() => {
             document.getElementById(location.hash.slice(1))?.scrollIntoView({
-                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+                    .matches
+                    ? 'instant'
+                    : 'smooth',
                 block: 'start',
             });
         });
@@ -43,14 +51,20 @@ export default function Header({ cart }) {
         return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
-    function handleLogout() {
-        logout();
+    async function handleLogout() {
+        try {
+            await logout();
+        } catch (error) {
+            setLogoutError(error.message);
+            return;
+        }
         setMenuOpen(false);
         navigate('/');
     }
 
     return (
         <header className="header">
+            {logoutError && <p role="alert">{logoutError}</p>}
             <div className="header-container">
                 <Link to="/" className="logo">
                     <span className="logo-top">ГАСТРОНОМ</span>
@@ -68,7 +82,9 @@ export default function Header({ cart }) {
                 <div className="header-actions">
                     <Link to="/cart" className="cart-btn" aria-label="Кошик">
                         🛒
-                        <span className="cart-badge">{cart?.length ?? 0}</span>
+                        <span className="cart-badge">
+                            {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                        </span>
                     </Link>
 
                     {user ? (
@@ -80,11 +96,17 @@ export default function Header({ cart }) {
                                 onClick={() => setMenuOpen((open) => !open)}
                             >
                                 <Avatar user={user} />
-                                <span className="user-menu-name">{firstName}</span>
+                                <span className="user-menu-name">
+                                    {firstName}
+                                </span>
                             </button>
 
-                            <ul className={`dropdown-menu dropdown-menu-end user-dropdown ${menuOpen ? 'show' : ''}`}>
-                                <li className="dropdown-item-text user-dropdown-email">{user.email}</li>
+                            <ul
+                                className={`dropdown-menu dropdown-menu-end user-dropdown ${menuOpen ? 'show' : ''}`}
+                            >
+                                <li className="dropdown-item-text user-dropdown-email">
+                                    {user.email}
+                                </li>
                                 <li>
                                     <hr className="dropdown-divider" />
                                 </li>
@@ -98,7 +120,11 @@ export default function Header({ cart }) {
                                     </Link>
                                 </li>
                                 <li>
-                                    <button className="dropdown-item" type="button" onClick={handleLogout}>
+                                    <button
+                                        className="dropdown-item"
+                                        type="button"
+                                        onClick={handleLogout}
+                                    >
                                         Вийти
                                     </button>
                                 </li>

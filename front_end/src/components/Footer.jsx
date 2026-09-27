@@ -102,7 +102,21 @@ const Bottom = styled.div`
     }
 `;
 
-export default function Footer() {
+export default function Footer({ compact = false }) {
+    if (compact) {
+        return (
+            <footer className="compact-footer">
+                <div className="compact-footer-inner">
+                    <div className="compact-footer-brand">
+                        <span>ГАСТРОНОМ «ЧЕРЕМШИНА»™</span>
+                        <small>© {new Date().getFullYear()}</small>
+                    </div>
+                    <p>М’ясні вироби та делікатеси · Коломия, Україна</p>
+                </div>
+            </footer>
+        );
+    }
+
     return (
         <FooterBar>
             <Inner>
@@ -112,7 +126,8 @@ export default function Footer() {
                         ЧЕРЕМШИНА<Trademark>™</Trademark>
                     </LogoMain>
                     <Tagline>
-                        М'ясні вироби та делікатеси власного виробництва. Без посередників.
+                        М'ясні вироби та делікатеси власного виробництва. Без
+                        посередників.
                     </Tagline>
                 </div>
 

@@ -21,6 +21,9 @@ function publicUser(user) {
         email: user.email,
         phone: user.phone || '',
         photo: user.photo || '',
+        city: user.city || '',
+        birthday: user.birthday || '',
+        preferences: user.preferences || [],
     };
 }
 
@@ -63,9 +66,7 @@ function demoOrders() {
 }
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(() =>
-        readJson(SESSION_KEY, null)
-    );
+    const [user, setUser] = useState(() => readJson(SESSION_KEY, null));
 
     const [orders, setOrders] = useState(() => {
         const session = readJson(SESSION_KEY, null);
@@ -79,10 +80,7 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         if (user) {
-            localStorage.setItem(
-                SESSION_KEY,
-                JSON.stringify(user)
-            );
+            localStorage.setItem(SESSION_KEY, JSON.stringify(user));
         } else {
             localStorage.removeItem(SESSION_KEY);
         }
@@ -93,33 +91,22 @@ export function AuthProvider({ children }) {
 
         all[email] = nextOrders;
 
-        localStorage.setItem(
-            ORDERS_KEY,
-            JSON.stringify(all)
-        );
+        localStorage.setItem(ORDERS_KEY, JSON.stringify(all));
 
         setOrders(nextOrders);
     }
 
-    function register({
-                          name,
-                          email,
-                          password,
-                          phone,
-                          photo
-                      }) {
+    function register({ name, email, password, phone, photo }) {
         const users = readJson(USERS_KEY, []);
 
         const exists = users.some(
-            (item) =>
-                item.email.toLowerCase() ===
-                email.toLowerCase()
+            (item) => item.email.toLowerCase() === email.toLowerCase(),
         );
 
         if (exists) {
             return {
                 ok: false,
-                error: 'Користувач з таким email вже існує'
+                error: 'Користувач з таким email вже існує',
             };
         }
 
@@ -133,10 +120,7 @@ export function AuthProvider({ children }) {
 
         users.push(newUser);
 
-        localStorage.setItem(
-            USERS_KEY,
-            JSON.stringify(users)
-        );
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
         const session = publicUser(newUser);
 
@@ -152,15 +136,14 @@ export function AuthProvider({ children }) {
 
         const found = users.find(
             (item) =>
-                item.email.toLowerCase() ===
-                email.toLowerCase() &&
-                item.password === password
+                item.email.toLowerCase() === email.toLowerCase() &&
+                item.password === password,
         );
 
         if (!found) {
             return {
                 ok: false,
-                error: 'Невірний email або пароль'
+                error: 'Невірний email або пароль',
             };
         }
 
@@ -180,55 +163,48 @@ export function AuthProvider({ children }) {
 
     function updateProfile(patch) {
         if (!user) return;
+        const { preference_tags, ...fields } = patch;
+        patch = {
+            ...fields,
+            ...(preference_tags ? { preferences: preference_tags } : {}),
+        };
 
         const next = {
             ...user,
-            ...patch
+            ...patch,
         };
 
         setUser(next);
 
         const users = readJson(USERS_KEY, []);
 
-        const index = users.findIndex(
-            (item) => item.email === user.email
-        );
+        const index = users.findIndex((item) => item.email === user.email);
 
         if (index >= 0) {
             users[index] = {
                 ...users[index],
-                ...patch
+                ...patch,
             };
 
-            localStorage.setItem(
-                USERS_KEY,
-                JSON.stringify(users)
-            );
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
         }
     }
 
     function addOrder(cartItems, customer) {
         if (!user || !cartItems?.length) return;
 
-        const nextNumber = String(
-            orders.length + 42
-        ).padStart(4, '0');
+        const nextNumber = String(orders.length + 42).padStart(4, '0');
 
         const order = {
             id: `ЧШ-${nextNumber}`,
 
-            date: new Date()
-                .toISOString()
-                .slice(0, 10),
+            date: new Date().toISOString().slice(0, 10),
 
             status: 'Прийнято',
 
             total: cartItems.reduce(
-                (sum, item) =>
-                    sum +
-                    item.price *
-                    (item.quantity || 1),
-                0
+                (sum, item) => sum + item.price * (item.quantity || 1),
+                0,
             ),
 
             items: cartItems.map((item) => ({
@@ -245,22 +221,21 @@ export function AuthProvider({ children }) {
             },
         };
 
-        saveOrders(
-            user.email,
-            [order, ...orders]
-        );
+        saveOrders(user.email, [order, ...orders]);
     }
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                loading: false,
+                ordersError: '',
                 orders,
                 register,
                 login,
                 logout,
                 updateProfile,
-                addOrder
+                addOrder,
             }}
         >
             {children}
@@ -268,13 +243,12 @@ export function AuthProvider({ children }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const context = useContext(AuthContext);
 
     if (!context) {
-        throw new Error(
-            'useAuth має використовуватись всередині AuthProvider'
-        );
+        throw new Error('useAuth має використовуватись всередині AuthProvider');
     }
 
     return context;

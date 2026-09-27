@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const categories = [
     { id: 'sausages', category: 'sausages', label: 'Ковбаси', icon: '🥖' },
@@ -9,7 +9,12 @@ const categories = [
     { id: 'butter', category: 'butter', label: 'Масло та жири', icon: '🧈' },
     { id: 'bakery', category: 'bakery', label: 'Хліб і випічка', icon: '🍞' },
     { id: 'drinks', category: 'drinks', label: 'Соки та напої', icon: '🧃' },
-    { id: 'sauces', category: 'sauces', label: 'Соуси та приправи', icon: '🧂' },
+    {
+        id: 'sauces',
+        category: 'sauces',
+        label: 'Соуси та приправи',
+        icon: '🧂',
+    },
     { id: 'veggies', category: 'veggies', label: 'Свіжі овочі', icon: '🥦' },
     { id: 'canned', category: 'canned', label: 'Консервація', icon: '🥫' },
 ];
@@ -43,34 +48,31 @@ const mockProducts = [
         id: 4,
         category: 'sausages',
         name: 'Домашня ковбаса',
-        description: 'Соковита свиняча ковбаса з часником та ароматними спеціями',
+        description:
+            'Соковита свиняча ковбаса з часником та ароматними спеціями',
         price: 98,
         unit: '₴/кг',
     },
 ];
 
-export default function Products({addToCart}) {
+export default function Products({ addToCart }) {
     const [activeCategory, setActiveCategory] = useState('sausages');
 
     const filteredProducts = mockProducts.filter(
-        (product) => product.category === activeCategory
+        (product) => product.category === activeCategory,
     );
 
     return (
         <div id="products" className="products">
             <div className="products-container">
                 <div className="products-content">
+                    <div className="products-badge">АСОРТИМЕНТ</div>
 
-                    <div className="products-badge">
-                        АСОРТИМЕНТ
-                    </div>
-
-                    <h1 className="products-title">
-                        Наша продукція
-                    </h1>
+                    <h1 className="products-title">Наша продукція</h1>
 
                     <p className="products-description">
-                        Понад 50 позицій власного виробництва та відібраних делікатесів.
+                        Понад 50 позицій власного виробництва та відібраних
+                        делікатесів.
                     </p>
 
                     <div className="products-list-section">
@@ -81,25 +83,17 @@ export default function Products({addToCart}) {
                                     activeCategory === cat.id ? 'active' : ''
                                 }`}
                                 onClick={() => setActiveCategory(cat.id)}
-
                             >
-                                <span className="cat-icon">
-                                    {cat.icon}
-                                </span>
+                                <span className="cat-icon">{cat.icon}</span>
 
-                                <span>
-                                    {cat.label}
-                                </span>
+                                <span>{cat.label}</span>
                             </button>
                         ))}
                     </div>
 
                     <div className="products-list">
                         {filteredProducts.map((product) => (
-                            <div
-                                key={product.id}
-                                className="product-card"
-                            >
+                            <div key={product.id} className="product-card">
                                 <div className="card-image-wrapper">
                                     <div className="card-image-placeholder">
                                         Фото товару
@@ -109,14 +103,13 @@ export default function Products({addToCart}) {
                                 <span className="card-category">
                                     {
                                         categories.find(
-                                            (cat) => cat.id === product.category
+                                            (cat) =>
+                                                cat.id === product.category,
                                         )?.label
                                     }
                                 </span>
 
-                                <h3 className="card-title">
-                                    {product.name}
-                                </h3>
+                                <h3 className="card-title">{product.name}</h3>
 
                                 <p className="card-description">
                                     {product.description}
@@ -133,17 +126,16 @@ export default function Products({addToCart}) {
                                         </span>
                                     </div>
 
-                                    <button className="btn-buy"
-                                        onClick ={() => addToCart(product)}
+                                    <button
+                                        className="btn-buy"
+                                        onClick={() => addToCart(product)}
                                     >
-
                                         КУПИТИ
                                     </button>
                                 </div>
                             </div>
                         ))}
                     </div>
-
                 </div>
             </div>
         </div>

@@ -1,17 +1,21 @@
-import meates from "../assets/image/meates.png";
+import meates from '../assets/image/meates.png';
 
-export default function About(){
-    return(
+export default function About() {
+    return (
         <div id="about" className="about">
             <div className="about-container">
-              <div className="about-img-wrapper">
-                  <img src={meates} alt="М'ясні вироби" className="about-image" />
+                <div className="about-img-wrapper">
+                    <img
+                        src={meates}
+                        alt="М'ясні вироби"
+                        className="about-image"
+                    />
 
-                  <div className="about-image-badge">
-                      <span className="badhe-num">11+</span>
-                      <span className="badge-text">категорій товарів</span>
-                  </div>
-              </div>
+                    <div className="about-image-badge">
+                        <span className="badhe-num">12+</span>
+                        <span className="badge-text">категорій товарів</span>
+                    </div>
+                </div>
 
                 <div className="about-content">
                     <div className="about-page">ПРО НАС</div>
@@ -22,11 +26,13 @@ export default function About(){
                     </h2>
 
                     <p className="about-text">
-                        Ми самі вирощуємо, обробляємо та коптимо — від ферми до прилавка. Жодних перекупників, жодних зайвих рук.
+                        Ми самі вирощуємо, обробляємо та коптимо — від ферми до
+                        прилавка. Жодних перекупників, жодних зайвих рук.
                     </p>
 
                     <p className="about-text">
-                        Власна коптильня на дубових дровах, свій засолювальний цех, перевірена сировина — все під одним дахом.
+                        Власна коптильня на дубових дровах, свій засолювальний
+                        цех, перевірена сировина — все під одним дахом.
                     </p>
 
                     <p className="about-text highlight">
@@ -46,7 +52,7 @@ export default function About(){
                     </div>
 
                     <div className="stat-item">
-                        <span className="stat-num">11+</span>
+                        <span className="stat-num">12+</span>
                         <span className="stat-label">КАТЕГОРІЙ</span>
                     </div>
                 </div>
@@ -54,5 +60,3 @@ export default function About(){
         </div>
     );
 }
-
-

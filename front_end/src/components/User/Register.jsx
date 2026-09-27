@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Register() {
-    const { user, register } = useAuth();
+    const { user, loading, register } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const destination = ['/order', '/cabinet', '/profile'].includes(
+        location.state?.from,
+    )
+        ? location.state.from
+        : '/cabinet';
+    const [pending, setPending] = useState(false);
 
     const [form, setForm] = useState({
         name: '',
@@ -16,8 +23,14 @@ export default function Register() {
 
     const [error, setError] = useState('');
 
+    if (loading)
+        return (
+            <main className="auth-page" role="status">
+                Завантаження…
+            </main>
+        );
     if (user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to={destination} replace />;
     }
 
     function handleChange(event) {
@@ -29,8 +42,9 @@ export default function Register() {
         });
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
+        if (pending) return;
         setError('');
 
         if (!form.name) {
@@ -58,19 +72,21 @@ export default function Register() {
             return;
         }
 
-        const result = register({
+        setPending(true);
+        const result = await register({
             name: form.name,
             email: form.email,
             password: form.password,
             phone: form.phone,
         });
 
+        setPending(false);
         if (!result.ok) {
             setError(result.error);
             return;
         }
 
-        navigate('/');
+        navigate(destination, { replace: true });
     }
 
     return (
@@ -84,8 +100,9 @@ export default function Register() {
                 </h2>
 
                 <p className="auth-visual-text">
-                    Створіть акаунт, щоб оформлювати замовлення швидше та отримувати
-                    акції гастроному — від сирної п’ятниці до подарунка на день народження.
+                    Створіть акаунт, щоб оформлювати замовлення швидше та
+                    отримувати акції гастроному — від сирної п’ятниці до
+                    подарунка на день народження.
                 </p>
             </div>
 
@@ -93,25 +110,26 @@ export default function Register() {
                 <div className="auth-window">
                     <p className="auth-eyebrow">Реєстрація</p>
 
-                    <h1 className="auth-heading">
-                        Новий клієнт
-                    </h1>
+                    <h1 className="auth-heading">Новий клієнт</h1>
 
                     <p className="auth-switch">
-                        Вже є акаунт? <Link to="/login">Увійти</Link>
+                        Вже є акаунт?{' '}
+                        <Link to="/login" state={{ from: destination }}>
+                            Увійти
+                        </Link>
                     </p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
                         {error && (
-                            <div className="alert alert-danger py-2" role="alert">
+                            <div
+                                className="alert alert-danger py-2"
+                                role="alert"
+                            >
                                 {error}
                             </div>
                         )}
 
-                        <label
-                            className="auth-label"
-                            htmlFor="register-name"
-                        >
+                        <label className="auth-label" htmlFor="register-name">
                             Ім&apos;я та прізвище
                         </label>
 
@@ -201,6 +219,7 @@ export default function Register() {
 
                         <button
                             className="auth-submit"
+                            disabled={pending}
                             type="submit"
                         >
                             Зареєструватись

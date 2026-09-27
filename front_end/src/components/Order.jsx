@@ -6,40 +6,78 @@ import '../App.css';
 const money = (value) => `${value.toLocaleString('uk-UA')} ₴`;
 
 export default function Order({ cart, setCart }) {
+    const { user, loading } = useAuth();
+    if (loading)
+        return (
+            <main className="order-page" role="status">
+                Завантаження…
+            </main>
+        );
+    return (
+        <OrderForm
+            key={user?.id || user?.email || 'guest'}
+            cart={cart}
+            setCart={setCart}
+        />
+    );
+}
+function OrderForm({ cart, setCart }) {
     const { user, addOrder } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [phone, setPhone] = useState(user?.phone || '');
     const [deliveryType, setDeliveryType] = useState('pickup');
+    const [address, setAddress] = useState('');
     const [comment, setComment] = useState('');
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    const [pending, setPending] = useState(false);
     const total = cart.reduce(
         (sum, product) => sum + product.price * (product.quantity || 1),
-        0
+        0,
     );
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
+        if (pending) return;
         setError('');
         if (!user || !cart.length) return;
-        if (!name.trim() || phone.replace(/\D/g, '').length < 10) {
+        if (
+            !name.trim() ||
+            !/^[+\d\s().-]+$/.test(phone) ||
+            phone.replace(/\D/g, '').length < 10 ||
+            phone.replace(/\D/g, '').length > 15
+        ) {
             setError(
                 'Вкажіть ім’я та коректний номер телефону ' +
-                '(щонайменше 10 цифр).'
+                    '(щонайменше 10 цифр).',
             );
             return;
         }
+        if (deliveryType === 'delivery' && !address.trim()) {
+            setError('Вкажіть адресу доставки.');
+            return;
+        }
         try {
-            addOrder(cart, {
+            setPending(true);
+            await addOrder(cart, {
                 name: name.trim(),
                 phone: phone.trim(),
                 deliveryType,
-                comment: comment.trim(),
+                comment: [
+                    deliveryType === 'delivery'
+                        ? 'Адреса доставки: ' + address.trim()
+                        : '',
+                    comment.trim(),
+                ]
+                    .filter(Boolean)
+                    .join('\n'),
             });
             setCart([]);
             setSuccess(true);
-        } catch {
-            setError('Не вдалося зберегти замовлення. Спробуйте ще раз.');
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setPending(false);
         }
     }
 
@@ -48,22 +86,17 @@ export default function Order({ cart, setCart }) {
             <div className="order-container">
                 <p className="order-eyebrow">Оформлення</p>
                 <h1 className="order-title">
-                    {success
-                        ? 'Дякуємо за замовлення!'
-                        : 'Оформити замовлення'}
+                    {success ? 'Дякуємо за замовлення!' : 'Оформити замовлення'}
                 </h1>
                 {success ? (
                     <section className="order-state" aria-live="polite">
-                        <div
-                            className="order-success-icon"
-                            aria-hidden="true"
-                        >
+                        <div className="order-success-icon" aria-hidden="true">
                             ✓
                         </div>
                         <h2>Замовлення прийнято</h2>
                         <p>
-                            Ми зв’яжемося з вами найближчим часом
-                            для підтвердження.
+                            Ми зв’яжемося з вами найближчим часом для
+                            підтвердження.
                         </p>
                         <Link className="order-submit" to="/#products">
                             Нове замовлення
@@ -80,10 +113,12 @@ export default function Order({ cart, setCart }) {
                 ) : !user ? (
                     <section className="order-state">
                         <h2>Увійдіть, щоб оформити замовлення</h2>
-                        <p>
-                            Ваші товари залишаться в кошику під час переходу.
-                        </p>
-                        <Link className="order-submit" to="/login">
+                        <p>Ваші товари залишаться в кошику під час переходу.</p>
+                        <Link
+                            className="order-submit"
+                            to="/login"
+                            state={{ from: '/order' }}
+                        >
                             Увійти
                         </Link>
                         <Link className="order-back" to="/cart">
@@ -92,10 +127,7 @@ export default function Order({ cart, setCart }) {
                     </section>
                 ) : (
                     <div className="order-layout">
-                        <form
-                            className="order-form"
-                            onSubmit={handleSubmit}
-                        >
+                        <form className="order-form" onSubmit={handleSubmit}>
                             <div>
                                 <label
                                     className="order-label"
@@ -164,6 +196,25 @@ export default function Order({ cart, setCart }) {
                                     ))}
                                 </div>
                             </fieldset>
+                            {deliveryType === 'delivery' && (
+                                <div>
+                                    <label
+                                        className="order-label"
+                                        htmlFor="order-address"
+                                    >
+                                        Адреса доставки *
+                                    </label>
+                                    <input
+                                        id="order-address"
+                                        required
+                                        autoComplete="street-address"
+                                        value={address}
+                                        onChange={(event) =>
+                                            setAddress(event.target.value)
+                                        }
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label
                                     className="order-label"
@@ -189,7 +240,11 @@ export default function Order({ cart, setCart }) {
                                     {error}
                                 </p>
                             )}
-                            <button className="order-submit" type="submit">
+                            <button
+                                className="order-submit"
+                                type="submit"
+                                disabled={pending}
+                            >
                                 Підтвердити замовлення
                             </button>
                         </form>
@@ -197,9 +252,7 @@ export default function Order({ cart, setCart }) {
                             className="order-summary"
                             aria-labelledby="order-summary-title"
                         >
-                            <h2 id="order-summary-title">
-                                Ваше замовлення
-                            </h2>
+                            <h2 id="order-summary-title">Ваше замовлення</h2>
                             <ul className="order-items">
                                 {cart.map((product) => (
                                     <li key={product.id}>
@@ -210,7 +263,7 @@ export default function Order({ cart, setCart }) {
                                         <strong>
                                             {money(
                                                 product.price *
-                                                (product.quantity || 1)
+                                                    (product.quantity || 1),
                                             )}
                                         </strong>
                                     </li>

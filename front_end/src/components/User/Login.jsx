@@ -1,22 +1,36 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Login() {
-    const { user, login } = useAuth();
+    const { user, loading, login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const destination = ['/order', '/cabinet', '/profile'].includes(
+        location.state?.from,
+    )
+        ? location.state.from
+        : '/cabinet';
+    const [pending, setPending] = useState(false);
     const [form, setForm] = useState({
         email: '',
         password: '',
     });
     const [error, setError] = useState('');
 
+    if (loading)
+        return (
+            <main className="auth-page" role="status">
+                Завантаження…
+            </main>
+        );
     if (user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to={destination} replace />;
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
+        if (pending) return;
         setError('');
 
         if (!form.email) {
@@ -29,13 +43,15 @@ export default function Login() {
             return;
         }
 
-        const result = login(form);
+        setPending(true);
+        const result = await login(form);
+        setPending(false);
         if (!result.ok) {
             setError(result.error);
             return;
         }
 
-        navigate('/');
+        navigate(destination, { replace: true });
     }
 
     function handleChange(event) {
@@ -56,8 +72,8 @@ export default function Login() {
                     <span>«Черемшина»</span>
                 </h2>
                 <p className="auth-visual-text">
-                    Увійдіть, щоб бачити історію замовлень, зберігати улюблені смаки
-                    та отримувати знижку на день народження.
+                    Увійдіть, щоб бачити історію замовлень, зберігати улюблені
+                    смаки та отримувати знижку на день народження.
                 </p>
             </div>
 
@@ -66,12 +82,18 @@ export default function Login() {
                     <p className="auth-eyebrow">Вхід до кабінету</p>
                     <h1 className="auth-heading">Вхід</h1>
                     <p className="auth-switch">
-                        Немає акаунта? <Link to="/register">Зареєструватись</Link>
+                        Немає акаунта?{' '}
+                        <Link to="/register" state={{ from: destination }}>
+                            Зареєструватись
+                        </Link>
                     </p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
                         {error && (
-                            <div className="alert alert-danger py-2" role="alert">
+                            <div
+                                className="alert alert-danger py-2"
+                                role="alert"
+                            >
                                 {error}
                             </div>
                         )}
@@ -102,7 +124,11 @@ export default function Login() {
                             onChange={handleChange}
                         />
 
-                        <button className="auth-submit" type="submit">
+                        <button
+                            className="auth-submit"
+                            disabled={pending}
+                            type="submit"
+                        >
                             Увійти
                         </button>
                     </form>
