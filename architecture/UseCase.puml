@@ -1,0 +1,123 @@
+@startuml Cheremshyna_UseCase
+title Гастроном «Черемшина» — Діаграма прецедентів
+
+skinparam actorStyle awesome
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName "DejaVu Sans"
+left to right direction
+
+actor "Гість" as Guest
+actor "Покупець\n(авторизований)" as Buyer
+actor "Адміністратор" as Admin
+
+rectangle "Гастроном «Черемшина»" {
+
+  package "Каталог" {
+    usecase "Переглянути категорії" as UC_Cat
+    usecase "Переглянути товари" as UC_Prod
+    usecase "Пошук і фільтр товарів" as UC_Search
+    usecase "Відкрити картку товару" as UC_Detail
+  }
+
+  package "Кошик" {
+    usecase "Додати товар у кошик" as UC_Add
+    usecase "Переглянути кошик" as UC_ViewCart
+    usecase "Змінити кількість" as UC_Qty
+    usecase "Видалити позицію" as UC_DelItem
+    usecase "Очистити кошик" as UC_Clear
+  }
+
+  package "Замовлення" {
+    usecase "Швидке замовлення\n(форма на сайті)" as UC_Quick
+    usecase "Оформити замовлення\nз кошика" as UC_Checkout
+    usecase "Переглянути історію\nзамовлень" as UC_History
+    usecase "Переглянути деталі\nзамовлення" as UC_OrderDetail
+  }
+
+  package "Автентифікація та кабінет" {
+    usecase "Зареєструватися" as UC_Reg
+    usecase "Увійти" as UC_Login
+    usecase "Вийти" as UC_Logout
+    usecase "Редагувати профіль\n(ім'я, телефон, місто)" as UC_Profile
+    usecase "Вказати день народження" as UC_Bday
+    usecase "Обрати гастрономічні\nвподобання" as UC_Prefs
+    usecase "Переглянути акції" as UC_Promo
+    usecase "Отримати знижку −15%\nна день народження" as UC_Disc
+  }
+
+  package "Адмінка Django" {
+    usecase "Керувати товарами\nі категоріями" as UC_AProd
+    usecase "Керувати замовленнями\n(зміна статусу)" as UC_AOrder
+    usecase "Керувати акціями" as UC_APromo
+    usecase "Керувати користувачами" as UC_AUser
+  }
+}
+
+' --- Гість ---
+Guest --> UC_Cat
+Guest --> UC_Prod
+Guest --> UC_Search
+Guest --> UC_Detail
+Guest --> UC_Add
+Guest --> UC_ViewCart
+Guest --> UC_Qty
+Guest --> UC_DelItem
+Guest --> UC_Clear
+Guest --> UC_Quick
+Guest --> UC_Reg
+Guest --> UC_Login
+
+' --- Покупець ---
+Buyer --> UC_Cat
+Buyer --> UC_Prod
+Buyer --> UC_Search
+Buyer --> UC_Detail
+Buyer --> UC_Add
+Buyer --> UC_ViewCart
+Buyer --> UC_Qty
+Buyer --> UC_DelItem
+Buyer --> UC_Clear
+Buyer --> UC_Quick
+Buyer --> UC_Checkout
+Buyer --> UC_History
+Buyer --> UC_OrderDetail
+Buyer --> UC_Logout
+Buyer --> UC_Profile
+Buyer --> UC_Bday
+Buyer --> UC_Prefs
+Buyer --> UC_Promo
+Buyer --> UC_Disc
+
+' --- Адмін ---
+Admin --> UC_Login
+Admin --> UC_AProd
+Admin --> UC_AOrder
+Admin --> UC_APromo
+Admin --> UC_AUser
+
+' --- Include / Extend ---
+UC_Checkout ..> UC_ViewCart : <<include>>
+UC_Checkout ..> UC_Disc : <<extend>>
+UC_Profile ..> UC_Bday : <<include>>
+UC_Profile ..> UC_Prefs : <<include>>
+
+' --- Notes ---
+note bottom of UC_Quick
+  POST /api/orders/quick/
+  Відповідь: «Дякуємо за замовлення!
+  Ми зв'яжемося з вами найближчим часом.»
+end note
+
+note bottom of UC_Disc
+  has_birthday_discount == true
+  (±7 днів від birthday)
+  → discount = total × 15%
+end note
+
+note bottom of UC_History
+  Вкладка «Замовлення»
+  у кабінеті (/profile)
+end note
+
+@enduml
