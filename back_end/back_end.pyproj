@@ -38,6 +38,9 @@
     <Compile Include="back_end\wsgi.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".env">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
