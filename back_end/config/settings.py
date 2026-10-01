@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-# import posixpath
+import posixpath
 from pathlib import Path
 from dotenv import load_dotenv  # для читання змінних з файлу .env
 
@@ -40,18 +40,20 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
 # Application references
 # https://docs.djangoproject.com/en/2.1/ref/settings/#std:setting-INSTALLED_APPS
 INSTALLED_APPS = [
-    # Add your apps here to enable them
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Сторонні пакети
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
     'corsheaders',
-    'drf_spectacular',
+    'users',
+    'catalog',
+    'orders',
+    'promotions',
 ]
 
 # Middleware framework
