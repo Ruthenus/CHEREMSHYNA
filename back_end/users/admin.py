@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, UserPreference
 
 
-class PreferenceInline:
+class PreferenceInline(admin.TabularInline):
     model = UserPreference
     extra = 0
 

@@ -17,7 +17,7 @@
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <LaunchProvider>Django launcher</LaunchProvider>
-    <DjangoSettingsModule>back_end.settings</DjangoSettingsModule>
+    <DjangoSettingsModule>config.settings</DjangoSettingsModule>
     <WebBrowserUrl>http://localhost</WebBrowserUrl>
     <OutputPath>.</OutputPath>
     <SuppressCollectPythonCloudServiceFiles>true</SuppressCollectPythonCloudServiceFiles>

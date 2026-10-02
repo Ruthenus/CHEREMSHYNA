@@ -12,7 +12,7 @@ import sys
 if __name__ == '__main__':
     os.environ.setdefault(
         'DJANGO_SETTINGS_MODULE',
-        'back_end.settings')
+        'config.settings')
 
     try:
         from django.core.management import execute_from_command_line
