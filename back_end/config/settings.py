@@ -12,13 +12,16 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import posixpath
+from datetime import timedelta
 from pathlib import Path
-from dotenv import load_dotenv  # для читання змінних з файлу .env
-
-load_dotenv()
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# .env лежить поруч із manage.py. load_dotenv() без шляху
+# брав файл лише з поточної теки запуску і мовчки лишав SECRET_KEY порожнім.
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -48,8 +51,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # logout гасить refresh
     'django_filters',
     'corsheaders',
+    'drf_spectacular',  # OpenAPI-схема, Swagger UI, ReDoc
     'users',
     'catalog',
     'orders',
@@ -118,6 +123,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        # Форма реєстрації каже «мінімум 6». Дефолт Django — 8,
+        # і тоді валідний для верстки пароль API відхиляв би.
+        'OPTIONS': {'min_length': 6},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -145,7 +153,15 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+# Широко відкрито лише поки DEBUG (локальна здача).
+# HSTS, редірект на HTTPS і secure-cookie тут не вмикаємо: 
+# проєкт здається по HTTP, інакше адмінка і Vite перестають відкриватися.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:62550',
+        'http://127.0.0.1:62550',
+    ]
 
 # REST Framework
 REST_FRAMEWORK = {
@@ -160,4 +176,28 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 48,
+    # drf-spectacular будує /api/schema/ з цих вʼю.
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Swagger: /api/docs/  ·  ReDoc: /api/redoc/  ·  схема: /api/schema/
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Черемшина API',
+    'DESCRIPTION': (
+        'Контракт гастроному «Черемшина»: здоровʼя сервісу, автентифікація, '
+        'каталог, замовлення та акції. Захищені маршрути — заголовок '
+        'Authorization: Bearer <access>. Поле token у відповіді login/register '
+        'є аліасом access.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api',
+}
+
+# Короткий access (5 хв за замовчуванням simplejwt) ламав би кабінет.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
