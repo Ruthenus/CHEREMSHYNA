@@ -1,0 +1,1 @@
+# Команди django manage.py для застосунку catalog.
