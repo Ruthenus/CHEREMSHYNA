@@ -25,15 +25,19 @@ class Product(models.Model):
         related_name='products',
         verbose_name=_('категорія'),
     )
-    external_id = models.CharField(_('зовнішній ID'), max_length=100, unique=True)
+    external_id = models.CharField(_('зовнішній ID'), max_length=100, 
+                                   unique=True)
     name = models.CharField(_('назва'), max_length=255)
     slug = models.SlugField(_('slug'), max_length=255, unique=True)
     description = models.TextField(_('опис'), blank=True, default='')
     price = models.DecimalField(_('ціна'), max_digits=10, decimal_places=2)
-    price_display = models.CharField(_('відображення ціни'), max_length=60, blank=True, default='')
-    unit = models.CharField(_('одиниця вимірювання'), max_length=20, default='кг')
+    price_display = models.CharField(_('відображення ціни'), max_length=60, 
+                                     blank=True, default='')
+    unit = models.CharField(_('одиниця вимірювання'), max_length=20, 
+                            default='кг')
     emoji = models.CharField(_('emoji'), max_length=20, blank=True, default='')
-    image = models.ImageField(_('зображення'), upload_to='products/', null=True, blank=True)
+    image = models.ImageField(_('зображення'), upload_to='products/', 
+                              null=True, blank=True)
     is_available = models.BooleanField(_('в наявності'), default=True)
     is_featured = models.BooleanField(_('рекомендований'), default=False)
     stock = models.PositiveIntegerField(_('залишок на складі'), default=0)
@@ -47,7 +51,19 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def unit_label(self):
+        """Підпис ціни завжди у вигляді '₴/кг'.
+
+        Seed зберігає unit як '₴/кг', а адмінка за замовчуванням — 'кг'. 
+        Фронтенд (Products, Cart.saleUnit) очікує '₴/…'. 
+        Нормалізуємо тут, без міграції.
+        """
+        unit = (self.unit or '').strip()
+        return unit if unit.startswith('₴') else f'₴/{unit}'
+
     def save(self, *args, **kwargs):
         if not self.price_display:
-            self.price_display = f'{self.price} ₴/{self.unit}'
+            # Раніше unit '₴/кг', введений в адмінці, давав '189 ₴/₴/кг'.
+            self.price_display = f'{self.price} {self.unit_label}'
         super().save(*args, **kwargs)
