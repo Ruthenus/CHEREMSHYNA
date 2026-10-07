@@ -36,6 +36,8 @@ class User(AbstractUser):
     city = models.CharField(_('місто'), max_length=100, blank=True)
     birthday = models.DateField(_('день народження'), null=True, blank=True)
     photo = models.URLField(blank=True, default='')
+    # Зростає на logout. Старі JWT з іншим rev більше не приймаються.
+    auth_revision = models.PositiveIntegerField(default=0)
 
     PREFERENCE_CHOICES = [
         ('meat', "М'ясо та ковбаси"),
@@ -63,15 +65,25 @@ class User(AbstractUser):
     def has_birthday_discount(self):
         if not self.birthday:
             return False
-        from datetime import date
         from django.conf import settings
+        from django.utils import timezone
         window = getattr(settings, 'BIRTHDAY_DISCOUNT_WINDOW_DAYS', 7)
-        today = date.today()
-        try:
-            bday = self.birthday.replace(year=today.year)
-        except ValueError:
-            bday = self.birthday.replace(year=today.year, day=28)
-        return abs((bday - today).days) <= window
+        today = timezone.localdate()
+
+        def on_year(year):
+            try:
+                return self.birthday.replace(year=year)
+            except ValueError:
+                # 29 лютого у невисокосний рік
+                return self.birthday.replace(year=year, month=2, day=28)
+
+        # Раніше порівняння було лише з днем народження цього
+        # календарного року: 31 грудня і 1 січня розходились майже на рік і
+        # знижка не спрацьовувала. Перевіряємо сусідні роки.
+        return any(
+            abs((on_year(today.year + shift) - today).days) <= window
+            for shift in (-1, 0, 1)
+        )
 
 class UserPreference(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='preferences')
