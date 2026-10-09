@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 urlpatterns = [
@@ -6,4 +7,8 @@ urlpatterns = [
     path('login/',    views.login,    name='auth-login'),
     path('me/',       views.me,       name='auth-me'),
     path('logout/',   views.logout,   name='auth-logout'),
+    # POST {refresh} -> {access}. Claim `rev` копіюється з refresh в access,
+    # тож після logout (auth_revision +1) новий access теж недійсний, 
+    # а refresh у blacklist.
+    path('refresh/',  TokenRefreshView.as_view(), name='auth-refresh'),
 ]

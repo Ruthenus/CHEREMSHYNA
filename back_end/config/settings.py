@@ -166,7 +166,8 @@ if not DEBUG:
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # Перевіряє rev у токені, тож logout одразу відкликає access.
+        'users.authentication.RevisionJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',

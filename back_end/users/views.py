@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -18,13 +19,31 @@ User = get_user_model()
 def _tokens_for_user(user):
     """Генерує пару JWT-токенів для користувача."""
     refresh = RefreshToken.for_user(user)
+    # rev копіюється і в access. logout збільшує лічильник у базі.
+    refresh['rev'] = user.auth_revision
+    access = str(refresh.access_token)
     return {
         'refresh': str(refresh),
-        'access': str(refresh.access_token),
-        'token': str(refresh.access_token),  # alias для фронтенду
+        'access': access,
+        'token': access,
     }
 
 
+# Явна схема для Swagger: інакше @api_view показує порожнє тіло.
+_AuthResponse = {
+    200: {
+        'type': 'object',
+        'properties': {
+            'user': {'type': 'object'},
+            'access': {'type': 'string'},
+            'refresh': {'type': 'string'},
+            'token': {'type': 'string'},
+        },
+    }
+}
+
+
+@extend_schema(request=RegisterSerializer, responses={201: _AuthResponse[200]})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -39,6 +58,7 @@ def register(request):
     )
 
 
+@extend_schema(request=LoginSerializer, responses=_AuthResponse)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
@@ -61,10 +81,12 @@ def login(request):
     return Response({'user': UserSerializer(user).data, **tokens})
 
 
+@extend_schema(request=ProfileUpdateSerializer, responses=UserSerializer)
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def me(request):
-    """GET /api/auth/me/ — профіль; PATCH — оновлення профілю."""
+    """GET /api/auth/me/ — профіль; PATCH — оновлення профілю. 
+    Тіло відповіді — сам user."""
     if request.method == 'GET':
         return Response(UserSerializer(request.user).data)
 
@@ -76,10 +98,21 @@ def me(request):
     return Response(UserSerializer(request.user).data)
 
 
+class _LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(required=False, allow_blank=True)
+
+
+@extend_schema(request=_LogoutSerializer, responses={200: {'type': 'object'}})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout(request):
-    """POST /api/auth/logout/ — інвалідація refresh-токена."""
+    """POST /api/auth/logout/ — відповідь {detail: ok}.
+
+    Піднімаємо auth_revision, тож цей access одразу недійсний
+    на всіх пристроях. Refresh, якщо його передали, ще й потрапляє в blacklist.
+    """
+    request.user.auth_revision += 1
+    request.user.save(update_fields=['auth_revision'])
     try:
         refresh_token = request.data.get('refresh')
         if refresh_token:
