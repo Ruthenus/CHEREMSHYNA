@@ -1,10 +1,11 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import OrderViewSet
+# Явні шляхи замість роутера: quick/ має бути раніше за <id>/.
+from django.urls import path
 
-router = DefaultRouter()
-router.register(r'', OrderViewSet, basename='order')
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', views.OrderListCreateView.as_view(), name='order-list'),
+    path('quick/', views.QuickOrderView.as_view(), name='order-quick'),
+    path('preview/', views.OrderPreviewView.as_view(), name='order-preview'),
+    path('<int:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
 ]
