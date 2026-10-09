@@ -1,10 +1,11 @@
-from django.urls import path, include
+# Лише читання акцій. Маршрут codes прибрано разом із неіснуючою моделлю.
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import PromotionViewSet, PromoCodeViewSet
+
+from .views import PromotionViewSet
 
 router = DefaultRouter()
 router.register(r'promos', PromotionViewSet, basename='promotion')
-router.register(r'codes', PromoCodeViewSet, basename='promocode')
 
 urlpatterns = [
     path('', include(router.urls)),
