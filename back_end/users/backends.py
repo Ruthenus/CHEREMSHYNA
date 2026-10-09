@@ -10,7 +10,8 @@ class EmailBackend(ModelBackend):
         if email is None or password is None:
             return None
         try:
-            user = User.objects.get(email=email)
+            # Регістр email не повинен відрізняти вхід від реєстрації.
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             return None
         if user.check_password(password) and self.user_can_authenticate(user):
