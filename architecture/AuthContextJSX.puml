@@ -1,0 +1,28 @@
+@startuml
+actor User
+rectangle "AuthProvider" {
+  [register()] --> (api.register)
+  [login()] --> (api.login)
+  [logout()] --> (api.logout)
+  [updateProfile()] --> (api.updateMe)
+  [addOrder()] --> (api.createOrder)
+
+  (api.register) --> [setUser + remember]
+  (api.login) --> [setUser + remember]
+  (api.logout) --> [clearTokens + setUser=null]
+  (api.updateMe) --> [setUser + remember]
+  (api.createOrder) --> [setOrders]
+
+  [restore()] --> (api.me)
+  (api.me) --> [setUser + remember]
+  (api.me) --> (api.getOrders)
+  (api.getOrders) --> [setOrders]
+}
+
+User --> [register()]
+User --> [login()]
+User --> [logout()]
+User --> [updateProfile()]
+User --> [addOrder()]
+User --> [restore()]
+@enduml

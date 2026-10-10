@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import * as api from '../api.js';
 
 const AuthContext = createContext(null);
 
-const USERS_KEY = 'cheremshyna_users';
+// Той самий ключ сесії, що й раніше. Паролі більше не пишемо
+// в localStorage: сесія — це профіль із сервера плюс JWT у cheremshyna_token.
 const SESSION_KEY = 'cheremshyna_session';
-const ORDERS_KEY = 'cheremshyna_orders';
 
 function readJson(key, fallback) {
     try {
@@ -15,221 +16,179 @@ function readJson(key, fallback) {
     }
 }
 
-function publicUser(user) {
-    return {
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        photo: user.photo || '',
-        city: user.city || '',
-        birthday: user.birthday || '',
-        preferences: user.preferences || [],
-    };
-}
-
-function demoOrders() {
-    return [
-        {
-            id: 'ЧШ-0041',
-            date: '2026-09-18',
-            status: 'Доставлено',
-            total: 626,
-            items: [
-                { name: 'Балик Свинячий', qty: '0,8 кг' },
-                { name: 'Ковбаса Черемшина', qty: '1 кг' },
-                { name: 'Сир Гауда', qty: '0,5 кг' },
-            ],
-        },
-        {
-            id: 'ЧШ-0038',
-            date: '2026-09-05',
-            status: 'Доставлено',
-            total: 739,
-            items: [
-                { name: 'Шинка Варено-копчена', qty: '0,6 кг' },
-                { name: 'Сардельки Класичні', qty: '1 кг' },
-                { name: 'Кава Арабіка', qty: '250 г' },
-            ],
-        },
-        {
-            id: 'ЧШ-0034',
-            date: '2026-08-21',
-            status: 'Доставлено',
-            total: 421,
-            items: [
-                { name: 'Курятина Копчена', qty: '1 кг' },
-                { name: 'Гриби Мариновані', qty: '2 шт' },
-                { name: 'Хліб Бородинський', qty: '2 шт' },
-            ],
-        },
-    ];
+function remember(user) {
+    if (user) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    else localStorage.removeItem(SESSION_KEY);
 }
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(() => readJson(SESSION_KEY, null));
-
-    const [orders, setOrders] = useState(() => {
-        const session = readJson(SESSION_KEY, null);
-
-        if (!session) return [];
-
-        const all = readJson(ORDERS_KEY, {});
-
-        return all[session.email] || [];
+    // Немає access — сесію не відновлюємо, навіть 
+    // якщо cheremshyna_session ще лежить.
+    // JSON профілю без токена — це не вхід.
+    const [user, setUser] = useState(() => {
+        if (!localStorage.getItem('cheremshyna_token')) return null;
+        return readJson(SESSION_KEY, null);
     });
+    const [orders, setOrders] = useState([]);
+    const [ordersError, setOrdersError] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
-            localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-        } else {
-            localStorage.removeItem(SESSION_KEY);
+        let cancelled = false;
+
+        // Перевіряємо токен сервером, а не віримо збереженому профілю.
+        // Помилка /auth/me/ скидає сесію. Помилка історії замовлень — ні:
+        // користувач лишається ввійшлим, у кабінеті буде текст помилки.
+        async function restore() {
+            if (!localStorage.getItem('cheremshyna_token')) {
+                remember(null);
+                if (!cancelled) setLoading(false);
+                return;
+            }
+            try {
+                const profile = await api.me();
+                // Компонент могли розмонтувати, поки запит ще йшов.
+                if (cancelled) return;
+                setUser(profile);
+                remember(profile);
+                try {
+                    const history = await api.getOrders();
+                    if (!cancelled) setOrders(history);
+                } catch (error) {
+                    if (!cancelled) setOrdersError(api.errorMessage(error));
+                }
+            } catch {
+                api.clearTokens();
+                remember(null);
+                if (!cancelled) setUser(null);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
         }
-    }, [user]);
 
-    function saveOrders(email, nextOrders) {
-        const all = readJson(ORDERS_KEY, {});
-
-        all[email] = nextOrders;
-
-        localStorage.setItem(ORDERS_KEY, JSON.stringify(all));
-
-        setOrders(nextOrders);
-    }
-
-    function register({ name, email, password, phone, photo }) {
-        const users = readJson(USERS_KEY, []);
-
-        const exists = users.some(
-            (item) => item.email.toLowerCase() === email.toLowerCase(),
-        );
-
-        if (exists) {
-            return {
-                ok: false,
-                error: 'Користувач з таким email вже існує',
-            };
-        }
-
-        const newUser = {
-            name,
-            email,
-            password,
-            phone,
-            photo: photo || '',
+        restore();
+        return () => {
+            cancelled = true;
         };
+    }, []);
 
-        users.push(newUser);
-
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-        const session = publicUser(newUser);
-
-        setUser(session);
-
-        saveOrders(email, demoOrders());
-
-        return { ok: true };
-    }
-
-    function login({ email, password }) {
-        const users = readJson(USERS_KEY, []);
-
-        const found = users.find(
-            (item) =>
-                item.email.toLowerCase() === email.toLowerCase() &&
-                item.password === password,
-        );
-
-        if (!found) {
-            return {
-                ok: false,
-                error: 'Невірний email або пароль',
-            };
+    // Сервер перестав визнавати сесію (токен прострочений, вихід на іншому
+    // пристрої): прибираємо користувача з інтерфейсу одразу, 
+    // а не після перезавантаження.
+    useEffect(() => {
+        function handleExpired() {
+            remember(null);
+            setUser(null);
+            setOrders([]);
+            setOrdersError('');
         }
+        window.addEventListener(api.SESSION_EXPIRED_EVENT, handleExpired);
+        return () =>
+            window.removeEventListener(api.SESSION_EXPIRED_EVENT, handleExpired);
+    }, []);
 
-        setUser(publicUser(found));
+    // У стан кладемо data.user, не всю відповідь: токени вже записав api.js.
 
-        const all = readJson(ORDERS_KEY, {});
-
-        setOrders(all[found.email] || []);
-
-        return { ok: true };
+    async function register(form) {
+        try {
+            const data = await api.register({
+                name: form.name,
+                email: form.email,
+                phone: form.phone || '',
+                password: form.password,
+            });
+            setUser(data.user);
+            remember(data.user);
+            setOrders([]);
+            setOrdersError('');
+            return { ok: true };
+        } catch (error) {
+            return { ok: false, error: api.errorMessage(error) };
+        }
     }
 
-    function logout() {
+    async function login(form) {
+        try {
+            const data = await api.login({
+                email: form.email,
+                password: form.password,
+            });
+            setUser(data.user);
+            remember(data.user);
+            try {
+                setOrders(await api.getOrders());
+                setOrdersError('');
+            } catch (error) {
+                setOrders([]);
+                setOrdersError(api.errorMessage(error));
+            }
+            return { ok: true };
+        } catch (error) {
+            return { ok: false, error: api.errorMessage(error) };
+        }
+    }
+
+    // Локальний стан чистимо навіть якщо сервер не відповів.
+    // api.logout і так прибирає токени у finally.
+    async function logout() {
+        try {
+            await api.logout();
+        } catch {
+            api.clearTokens();
+        }
         setUser(null);
         setOrders([]);
+        setOrdersError('');
+        remember(null);
     }
 
-    function updateProfile(patch) {
-        if (!user) return;
-        const { preference_tags, ...fields } = patch;
-        patch = {
-            ...fields,
-            ...(preference_tags ? { preferences: preference_tags } : {}),
-        };
-
-        const next = {
-            ...user,
-            ...patch,
-        };
-
-        setUser(next);
-
-        const users = readJson(USERS_KEY, []);
-
-        const index = users.findIndex((item) => item.email === user.email);
-
-        if (index >= 0) {
-            users[index] = {
-                ...users[index],
-                ...patch,
-            };
-
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    async function updateProfile(patch) {
+        try {
+            const next = await api.updateMe(patch);
+            setUser(next);
+            remember(next);
+            return next;
+        } catch (error) {
+            throw new Error(api.errorMessage(error), { cause: error });
         }
     }
 
-    function addOrder(cartItems, customer) {
-        if (!user || !cartItems?.length) return;
-
-        const nextNumber = String(orders.length + 42).padStart(4, '0');
-
-        const order = {
-            id: `ЧШ-${nextNumber}`,
-
-            date: new Date().toISOString().slice(0, 10),
-
-            status: 'Прийнято',
-
-            total: cartItems.reduce(
-                (sum, item) => sum + item.price * (item.quantity || 1),
-                0,
-            ),
-
-            items: cartItems.map((item) => ({
-                name: item.name,
-                qty: `${item.quantity || 1} шт`,
-                price: item.price,
-            })),
-
-            customer: {
-                name: customer.name,
+    async function addOrder(cartItems, customer) {
+        if (!user || !cartItems?.length) return null;
+        let created;
+        try {
+            // У кошику поле id, контракт замовлення чекає product_id.
+            // Ціну не передаємо: її рахує сервер.
+            created = await api.createOrder({
+                items: cartItems.map((item) => ({
+                    product_id: item.id,
+                    quantity: item.quantity || 1,
+                })),
+                customer_name: customer.name,
                 phone: customer.phone,
-                deliveryType: customer.deliveryType,
-                comment: customer.comment,
-            },
-        };
-
-        saveOrders(user.email, [order, ...orders]);
+                delivery_type: customer.deliveryType || 'pickup',
+                comment: customer.comment || '',
+            });
+        } catch (error) {
+            throw new Error(api.errorMessage(error), { cause: error });
+        }
+        // Якщо після створення історія не дочиталась, 
+        // показуємо хоча б це замовлення.
+        try {
+            setOrders(await api.getOrders());
+            setOrdersError('');
+        } catch {
+            setOrders((previous) => [created, ...previous]);
+        }
+        return created;
     }
 
     return (
         <AuthContext.Provider
             value={{
                 user,
-                loading: false,
-                ordersError: '',
+                loading,
+                ordersError,
                 orders,
                 register,
                 login,
