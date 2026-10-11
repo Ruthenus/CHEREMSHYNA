@@ -1,25 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { errorMessage, getCategories, getProducts } from '../api.js';
 
-const categories = [
-    { id: 'sausages', category: 'sausages', label: 'Ковбаси', icon: '🥖' },
+// Локальний список лишився запасним, якщо Django не запущений.
+// Живий каталог береться з GET /categories/ та GET /products/.
+const fallbackCategories = [
+    { id: 'sausages', category: 'sausages', label: 'Ковбаси', icon: '🌭' },
     { id: 'smoked', category: 'smoked', label: 'Копченості', icon: '🥓' },
     { id: 'poultry', category: 'poultry', label: 'Птиця', icon: '🍗' },
     { id: 'pork', category: 'pork', label: 'Свинина', icon: '🥩' },
     { id: 'cheeses', category: 'cheeses', label: 'Сири', icon: '🧀' },
     { id: 'butter', category: 'butter', label: 'Масло та жири', icon: '🧈' },
-    { id: 'bakery', category: 'bakery', label: 'Хліб і випічка', icon: '🍞' },
+    { id: 'bakery', category: 'bakery', label: 'Хліб і випічка', icon: '🥖' },
     { id: 'drinks', category: 'drinks', label: 'Соки та напої', icon: '🧃' },
-    {
-        id: 'sauces',
-        category: 'sauces',
-        label: 'Соуси та приправи',
-        icon: '🧂',
-    },
+    { id: 'sauces', category: 'sauces', label: 'Соуси та приправи', icon: '🧂' },
+    { id: 'canned', category: 'canned', label: 'Консерви та мариновані', icon: '🥫' },
+    { id: 'coffee', category: 'coffee', label: 'Кава та чай', icon: '☕' },
     { id: 'veggies', category: 'veggies', label: 'Свіжі овочі', icon: '🥦' },
-    { id: 'canned', category: 'canned', label: 'Консервація', icon: '🥫' },
 ];
 
-const mockProducts = [
+
+const fallbackProducts = [
     {
         id: 1,
         category: 'sausages',
@@ -55,10 +55,78 @@ const mockProducts = [
     },
 ];
 
-export default function Products({ addToCart }) {
-    const [activeCategory, setActiveCategory] = useState('sausages');
+// API віддає stock. Товар з адмінки має stock=0 за замовчуванням,
+// і будь-яке замовлення на нього сервер відхиляє. Не даємо додати його в кошик.
+// Локальний приклад (без поля stock) цю перевірку не проходить і лишається як є.
+const isSoldOut = (product) =>
+    typeof product.stock === 'number' && product.stock <= 0;
 
-    const filteredProducts = mockProducts.filter(
+export default function Products({ addToCart }) {
+    const [categories, setCategories] = useState(fallbackCategories);
+    const [products, setProducts] = useState([]);
+    const [activeCategory, setActiveCategory] = useState('sausages');
+    const [status, setStatus] = useState('Завантаження асортименту…');
+    const [catalogOffline, setCatalogOffline] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        // Категорії й товари вантажимо разом. Якщо хоч один запит упав, показуємо 
+        // локальний приклад і вимикаємо «Купити»: id 1–4 не ті, що в базі.
+        async function loadCatalog() {
+            try {
+                const [remoteCategories, remoteProducts] = await Promise.all([
+                    getCategories(),
+                    getProducts(),
+                ]);
+                if (cancelled) return;
+                if (remoteCategories.length) {
+                    const nextCategories = remoteCategories.map((cat) => ({
+                        id: cat.slug,
+                        category: cat.slug,
+                        label: cat.name,
+                        icon: cat.icon || cat.emoji || '',
+                    }));
+                    setCategories(nextCategories);
+                    // Якщо поточної вкладки немає в відповіді сервера, беремо першу.
+                    // Інакше фільтр лишився б на sausages, а кнопок таких уже немає.
+                    setActiveCategory((current) =>
+                        nextCategories.some((cat) => cat.id === current)
+                            ? current
+                            : nextCategories[0].id,
+                    );
+                }
+                setProducts(
+                    remoteProducts.map((product) => ({
+                        ...product,
+                        // DRF віддає Decimal рядком. 
+                        // Без Number сума в кошику стала б конкатенацією.
+                        price: Number(product.price),
+                    })),
+                );
+                setCatalogOffline(false);
+                setStatus('');
+            } catch (error) {
+                if (cancelled) return;
+                setCategories(fallbackCategories);
+                setProducts(fallbackProducts);
+                // id 1–4 локального прикладу збігаються не з тими товарами, 
+                // що в базі.Купівля в цьому режимі замовила б інший товар.
+                setCatalogOffline(true);
+                setStatus(
+                    'Каталог із сервера недоступний, показано локальний приклад. ' +
+                    errorMessage(error),
+                );
+            }
+        }
+
+        loadCatalog();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const filteredProducts = products.filter(
         (product) => product.category === activeCategory,
     );
 
@@ -75,13 +143,18 @@ export default function Products({ addToCart }) {
                         делікатесів.
                     </p>
 
+                    {status && (
+                        <p className="products-description" role="status">
+                            {status}
+                        </p>
+                    )}
+
                     <div className="products-list-section">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
-                                className={`cat-btn ${
-                                    activeCategory === cat.id ? 'active' : ''
-                                }`}
+                                className={`cat-btn ${activeCategory === cat.id ? 'active' : ''
+                                    }`}
                                 onClick={() => setActiveCategory(cat.id)}
                             >
                                 <span className="cat-icon">{cat.icon}</span>
@@ -95,9 +168,20 @@ export default function Products({ addToCart }) {
                         {filteredProducts.map((product) => (
                             <div key={product.id} className="product-card">
                                 <div className="card-image-wrapper">
-                                    <div className="card-image-placeholder">
-                                        Фото товару
-                                    </div>
+                                    {product.image ? (
+                                        <img
+                                            className="card-image"
+                                            src={product.image}
+                                            alt={product.name}
+                                        />
+                                    ) : (
+                                        <div className="card-image-placeholder" aria-hidden="true">
+                                            <span className="card-image-emoji">
+                                                    {categories.find((cat) =>
+                                                        cat.id === product.category)?.icon || '🛒'}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <span className="card-category">
@@ -128,9 +212,27 @@ export default function Products({ addToCart }) {
 
                                     <button
                                         className="btn-buy"
-                                        onClick={() => addToCart(product)}
+                                        disabled={
+                                            catalogOffline || isSoldOut(product)
+                                        }
+                                        onClick={() =>
+                                            addToCart({
+                                                ...product,
+                                                // У кошику була латиниця slug, не назва категорії.
+                                                categoryLabel:
+                                                    categories.find(
+                                                        (cat) =>
+                                                            cat.id ===
+                                                            product.category,
+                                                    )?.label || product.category,
+                                            })
+                                        }
                                     >
-                                        КУПИТИ
+                                        {catalogOffline
+                                            ? 'НЕМАЄ ЗВʼЯЗКУ'
+                                            : isSoldOut(product)
+                                                ? 'НЕМАЄ В НАЯВНОСТІ'
+                                                : 'КУПИТИ'}
                                     </button>
                                 </div>
                             </div>

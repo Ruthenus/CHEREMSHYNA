@@ -3,7 +3,7 @@ import { useState } from 'react';
 const contactItems = [
     {
         label: 'Адреса',
-        lines: ['м. Коломия, вул. Шевченка, 14', 'Ринок, павільйон №7'],
+        lines: ['м. Одеса, вул. Привозна, 14', 'Ринок «Привоз»'],
         icon: '📍',
     },
     {
