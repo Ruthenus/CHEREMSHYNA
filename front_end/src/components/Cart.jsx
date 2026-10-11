@@ -1,6 +1,41 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
+// unit з каталогу — це підпис ціни «₴/кг», «₴/л», «₴/банка».
+// Раніше все, де немає «кг», показувалось як «шт» (сік, банка, пучок).
+function saleUnit(unit) {
+    if (!unit) return 'шт';
+    const cleaned = String(unit).replace(/^₴\s*\/?\s*/, '').trim();
+    return cleaned || 'шт';
+}
+
+// Старий кошик у localStorage має лише slug.
+const CATEGORY_LABELS = {
+    sausages: 'Ковбаси',
+    smoked: 'Копченості',
+    poultry: 'Птиця',
+    pork: 'Свинина',
+    cheeses: 'Сири',
+    butter: 'Масло та жири',
+    bakery: 'Хліб і випічка',
+    drinks: 'Соки та напої',
+    sauces: 'Соуси та приправи',
+    canned: 'Консерви та мариновані',
+    coffee: 'Кава та чай',
+    veggies: 'Свіжі овочі',
+};
+
+// Спочатку підпис із товару, далі словник за slug.
+// Старий кошик міг зберегти лише slug, без categoryLabel.
+function categoryTitle(product) {
+    return (
+        product.categoryLabel ||
+        CATEGORY_LABELS[product.category] ||
+        product.category ||
+        ''
+    );
+}
+
 export default function Cart({ cart, setCart }) {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -9,6 +44,8 @@ export default function Cart({ cart, setCart }) {
         return sum + product.price * (product.quantity || 1);
     }, 0);
 
+    // Без сесії ведемо на вхід і пам’ятаємо, що повертатись треба на /order,
+    // а не на кошик.
     function handleCheckout() {
         if (!user) {
             navigate('/login', { state: { from: '/order' } });
@@ -19,17 +56,22 @@ export default function Cart({ cart, setCart }) {
     }
     function increaseQuantityIndex(index) {
         setCart((prevCart) =>
-            prevCart.map((product, i) =>
-                i === index
-                    ? {
-                          ...product,
-                          quantity: (product.quantity || 1) + 1,
-                      }
-                    : product,
-            ),
+            prevCart.map((product, i) => {
+                if (i !== index) return product;
+                // Та сама стеля, що в OrderItemWriteSerializer: 
+                // 99 і не більше залишку.
+                const current = product.quantity || 1;
+                const stockCap =
+                    typeof product.stock === 'number' ? product.stock : 99;
+                const cap = Math.min(99, stockCap);
+                if (current >= cap) return product;
+                return { ...product, quantity: current + 1 };
+            }),
         );
     }
 
+    // Нуль і менше не лишаємо в кошику: рядок зникає, 
+    // окрема кнопка видалення не потрібна.
     function decreaseQuantityIndex(index) {
         setCart((prevCart) =>
             prevCart
@@ -95,7 +137,7 @@ export default function Cart({ cart, setCart }) {
                                     <div className="card-body d-flex justify-content-between align-items-center">
                                         <div>
                                             <small className="text-uppercase">
-                                                {product.category}
+                                                {categoryTitle(product)}
                                             </small>
 
                                             <h5 className="card-title">
@@ -103,7 +145,8 @@ export default function Cart({ cart, setCart }) {
                                             </h5>
 
                                             <p className="card-text">
-                                                {product.price} ₴{' '}
+                                                {/* було «189 ₴ 2 = 378 ₴» без знака множення */}
+                                                {product.price} ₴{' × '}
                                                 {product.quantity || 1}
                                                 {' = '}
                                                 {product.price *
@@ -125,9 +168,7 @@ export default function Cart({ cart, setCart }) {
 
                                             <span>
                                                 {product.quantity || 1}{' '}
-                                                {product.unit?.includes('кг')
-                                                    ? 'кг'
-                                                    : 'шт'}
+                                                {saleUnit(product.unit)}
                                             </span>
 
                                             <button

@@ -47,8 +47,9 @@ export default function Header({ cart }) {
             }
         }
 
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        // pointerdown закриває меню і на тач-екрані, не лише мишею.
+        document.addEventListener('pointerdown', handleClick);
+        return () => document.removeEventListener('pointerdown', handleClick);
     }, []);
 
     async function handleLogout() {

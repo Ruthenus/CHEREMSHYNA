@@ -11,12 +11,16 @@ const items = [
 
 export default function Ticker() {
     return (
-        <div className="ticker-track">
-            {[...items, ...items].map((item, index) => (
-                <div className="ticker-item" key={index}>
-                    {item.text}
-                </div>
-            ))}
+        // .ticker ховає доріжку (overflow: hidden). Без обгортки
+        // бігучий рядок розтягував сторінку вбік і на телефоні, і на десктопі.
+        <div className="ticker">
+            <div className="ticker-track">
+                {[...items, ...items].map((item, index) => (
+                    <div className="ticker-item" key={index}>
+                        {item.text}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

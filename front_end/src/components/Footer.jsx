@@ -111,7 +111,7 @@ export default function Footer({ compact = false }) {
                         <span>ГАСТРОНОМ «ЧЕРЕМШИНА»™</span>
                         <small>© {new Date().getFullYear()}</small>
                     </div>
-                    <p>М’ясні вироби та делікатеси · Коломия, Україна</p>
+                    <p>М’ясні вироби та делікатеси · Київ, Україна</p>
                 </div>
             </footer>
         );
@@ -141,8 +141,8 @@ export default function Footer({ compact = false }) {
 
                 <div>
                     <ColumnTitle>Контакти</ColumnTitle>
-                    <ContactLine>м. Коломия, вул. Шевченка, 14</ContactLine>
-                    <ContactLine>Ринок, павільйон №7</ContactLine>
+                    <ContactLine>м. Одеса, вул. Привозна, 14</ContactLine>
+                    <ContactLine>Ринок «Привоз»</ContactLine>
                     <ContactLine>+38 (050) 123-45-67</ContactLine>
                     <ContactLine>cheremshyna@gmail.com</ContactLine>
                 </div>
@@ -150,7 +150,7 @@ export default function Footer({ compact = false }) {
 
             <Bottom>
                 <span>© {new Date().getFullYear()} Гастроном «Черемшина»</span>
-                <span>Власне виробництво · Коломия</span>
+                <span>Власне виробництво · Команда «Бригантина»</span>
             </Bottom>
         </FooterBar>
     );
