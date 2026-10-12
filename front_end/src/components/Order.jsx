@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { previewOrder } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import '../App.css';
 
@@ -15,6 +16,8 @@ export default function Order({ cart, setCart }) {
         );
     return (
         <OrderForm
+            // Після входу форма має підставити ім’я з профілю, 
+            // а не лишити порожні поля гостя.
             key={user?.id || user?.email || 'guest'}
             cart={cart}
             setCart={setCart}
@@ -31,10 +34,35 @@ function OrderForm({ cart, setCart }) {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [pending, setPending] = useState(false);
+    const [quote, setQuote] = useState(null);
     const total = cart.reduce(
         (sum, product) => sum + product.price * (product.quantity || 1),
         0,
     );
+    // Сума на екрані — з /orders/preview/, якщо сервер відповів.
+    // Інакше локальна ціна × кількість, без знижки.
+    const payable = user && cart.length && quote ? quote.total : total;
+    const discount = user && cart.length && quote ? quote.discount || 0 : 0;
+
+    useEffect(() => {
+        if (!user || !cart.length) return undefined;
+        let cancelled = false;
+        previewOrder(
+            cart.map((item) => ({
+                product_id: item.id,
+                quantity: item.quantity || 1,
+            })),
+        )
+            .then((data) => {
+                if (!cancelled) setQuote(data);
+            })
+            .catch(() => {
+                if (!cancelled) setQuote(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [user, cart]);
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -46,10 +74,12 @@ function OrderForm({ cart, setCart }) {
             !/^[+\d\s().-]+$/.test(phone) ||
             phone.replace(/\D/g, '').length < 10 ||
             phone.replace(/\D/g, '').length > 15
+            // Ті самі 10–15 цифр, що в OrderCreateSerializer.
+            // Пробіли й дужки не рахуються.
         ) {
             setError(
                 'Вкажіть ім’я та коректний номер телефону ' +
-                    '(щонайменше 10 цифр).',
+                '(щонайменше 10 цифр).',
             );
             return;
         }
@@ -63,6 +93,8 @@ function OrderForm({ cart, setCart }) {
                 name: name.trim(),
                 phone: phone.trim(),
                 deliveryType,
+                // Окремого поля адреси в контракті немає.
+                // Адреса доставки їде в коментарі, з префіксом.
                 comment: [
                     deliveryType === 'delivery'
                         ? 'Адреса доставки: ' + address.trim()
@@ -263,16 +295,26 @@ function OrderForm({ cart, setCart }) {
                                         <strong>
                                             {money(
                                                 product.price *
-                                                    (product.quantity || 1),
+                                                (product.quantity || 1),
                                             )}
                                         </strong>
                                     </li>
                                 ))}
                             </ul>
                             <div className="order-total">
-                                <span>Разом:</span>
-                                <strong>{money(total)}</strong>
+                                <span>{discount > 0 ? 'До сплати:' : 'Разом:'}</span>
+                                <strong>{money(payable)}</strong>
                             </div>
+                            {discount > 0 && (
+                                <p className="order-back">
+                                    Знижка −{money(discount)} вже врахована
+                                    сервером
+                                    {quote?.subtotal != null
+                                        ? ` (було ${money(quote.subtotal)})`
+                                        : ''}
+                                    .
+                                </p>
+                            )}
                             <Link className="order-back" to="/cart">
                                 ← Змінити кошик
                             </Link>

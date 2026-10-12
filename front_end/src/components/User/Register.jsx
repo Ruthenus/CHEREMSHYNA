@@ -199,6 +199,11 @@ export default function Register() {
                             value={form.password}
                             onChange={handleChange}
                         />
+                        {/* Сервер тепер відхиляє надто поширені паролі. */}
+                        <p className="auth-switch">
+                            Не беріть «password» чи лише цифри — такий пароль не
+                            приймуть.
+                        </p>
 
                         <label
                             className="auth-label"

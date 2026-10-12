@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createQuickOrder, errorMessage } from '../api.js';
 
 const contactItems = [
     {
@@ -26,8 +27,9 @@ const contactItems = [
 export default function Contacts() {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
+    const [pending, setPending] = useState(false);
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
         const form = event.currentTarget;
         const data = new FormData(form);
@@ -53,15 +55,24 @@ export default function Contacts() {
             return;
         }
 
-        // Local prototype confirmation; no request is sent to the backend.
-        form.reset();
-        setSubmitted(true);
+        // [ДОПРАЦЬОВАНО] Раніше заявка лише скидала форму. Тепер POST /orders/quick/.
+        try {
+            setPending(true);
+            await createQuickOrder({ name, phone, order });
+            form.reset();
+            setSubmitted(true);
+        } catch (requestError) {
+            setError(errorMessage(requestError));
+        } finally {
+            setPending(false);
+        }
     }
 
     return (
         <section id="contacts" className="contacts">
             <div className="container py-5">
-                <div className="row align-items-center g-5">
+                {/* g-5 ширший за padding контейнера і давав горизонтальний скрол на телефоні. */}
+                <div className="row align-items-center gx-4 gy-5">
                     <div className="col-lg-6">
                         <p className="contacts-badge mb-3">Де нас знайти</p>
                         <h2 className="contacts-title mb-4">
@@ -177,8 +188,9 @@ export default function Contacts() {
                                     <button
                                         type="submit"
                                         className="btn contacts-submit w-100"
+                                        disabled={pending}
                                     >
-                                        Надіслати заявку
+                                        {pending ? 'Надсилання…' : 'Надіслати заявку'}
                                     </button>
                                 </form>
                             )}
