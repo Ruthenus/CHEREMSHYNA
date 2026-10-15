@@ -1,0 +1,44 @@
+@startuml AddToCartSequence
+title Додати в кошик — лише браузер, без API кошика
+
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam sequence {
+  ArrowColor #5c2b2f
+  LifeLineBorderColor #8c2240
+  ParticipantBackgroundColor #F5E6D3
+  ParticipantBorderColor #8c2240
+  ActorBackgroundColor #FFF8E7
+  ActorBorderColor #8c2240
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+}
+
+actor "Відвідувач" as User
+participant "Products.jsx" as Products
+participant "App.addToCart" as App
+database "localStorage\ncheremshyna_cart" as LS
+participant "Header\nбейдж і «Замовити»" as Header
+
+User -> Products : «КУПИТИ»
+alt немає зв'язку з каталогом або stock = 0
+  Products --> User : кнопка вимкнена\n«НЕМАЄ ЗВ'ЯЗКУ» / «НЕМАЄ В НАЯВНОСТІ»
+else товар можна взяти
+  Products -> App : товар з id, price, stock
+  App -> App : якщо рядок з цим id вже є,\nquantity = min(було + 1, min(99, stock))
+  App -> LS : записати масив кошика
+  App -> Header : сума quantity на бейджі
+  Header --> User : лічильник оновився
+end
+
+note over App
+  Запиту на сервер тут немає.
+  Моделі Cart і CartItem у бекенді
+  цей клік не бачить.
+  «Замовити» в шапці веде на /cart,
+  не одразу на /order.
+end note
+
+@enduml

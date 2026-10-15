@@ -1,0 +1,76 @@
+@startuml AuthenticationSequence
+title Вхід і вихід — access гаситься через auth_revision
+
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam sequence {
+  ArrowColor #5c2b2f
+  LifeLineBorderColor #8c2240
+  ParticipantBackgroundColor #F5E6D3
+  ParticipantBorderColor #8c2240
+  ActorBackgroundColor #FFF8E7
+  ActorBorderColor #8c2240
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+}
+
+actor "Користувач" as User
+participant "AuthContext\napi.js" as API
+participant "login / logout" as Views
+participant "EmailBackend" as Backend
+participant "RevisionJWTAuthentication" as JWT
+database "User" as DB
+database "token_blacklist" as BL
+
+== Вхід ==
+
+User -> API : email + password
+API -> Views : POST /api/auth/login/
+Views -> Backend : authenticate(email, password)
+Backend -> DB : email__iexact
+Backend --> Views : user або None
+alt пароль не зійшовся
+  Views --> API : 401\nНевірний email або пароль
+else
+  Views -> Views : refresh[rev] = auth_revision\naccess живе 1 добу\nrefresh — 14 діб
+  Views --> API : user, access, refresh, token
+  API -> API : cheremshyna_token\ncheremshyna_refresh\ncheremshyna_session = профіль
+end
+
+== Будь-який захищений запит ==
+
+API -> JWT : Authorization Bearer
+JWT -> DB : користувач з токена
+alt claim rev == user.auth_revision
+  JWT --> API : запит іде далі
+else сесію завершено
+  JWT --> API : 401
+  API -> API : clearTokens()\nподія session-expired
+  API -> User : кабінет більше не відкритий
+end
+
+== Вихід ==
+
+User -> API : вийти
+API -> Views : POST /api/auth/logout/\n{refresh}
+Views -> DB : auth_revision += 1
+Views -> BL : blacklist(refresh),\nякщо рядок передали
+Views --> API : {detail: ok}
+API -> API : прибрати токени\nнавіть якщо сервер не відповів
+
+note over DB
+  Старий access на іншому пристрої
+  теж відхиляється: rev у токені
+  більше не дорівнює лічильнику в базі.
+  Пароль у localStorage не зберігається.
+end note
+
+note over API
+  POST /api/auth/refresh/ видає новий access.
+  Цей клієнт новий refresh не записує.
+  Реєстрація одразу повертає ту саму пару токенів, що й login.
+end note
+
+@enduml

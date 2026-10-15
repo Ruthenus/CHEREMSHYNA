@@ -1,0 +1,107 @@
+@startuml
+!theme vibrant
+title Гастроном «Черемшина» — UX-діаграма навігації
+
+skinparam BackgroundColor #fdf6e3
+skinparam FontColor #000000
+skinparam ArrowColor #d70000
+skinparam BorderColor #000000
+skinparam PackageBackgroundColor #fdf6e3
+skinparam PackageBorderColor #005f87
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 16
+skinparam TitleFontSize 20
+skinparam NoteFontSize 14
+
+left to right direction
+
+actor "Гість" as Guest #f9eed8
+actor "Покупець" as Buyer #f9eed8
+
+rectangle "Головна сторінка (/)" as Home {
+  card "Header\n• Логотип ГАСТРОНОМ ЧЕРЕМШИНА™\n• Меню: Продукція | Про нас | Якість | Контакти\n• Кошик (лічильник)\n• Увійти / Замовити\n• (якщо ввійшов → меню користувача,\n  Кабінет)" as Header
+  card "Hero\n• Бейдж: м'ясні вироби власного виробництва\n• Заголовок «Черемшина»\n• Кнопки: ВСЯ ПРОДУКЦІЯ | ПРО НАС\n• Бейдж 100% НАТУРАЛЬНІ ПРОДУКТИ" as Hero
+  card "Продукція (#products)\n• Фільтр категорій\n• Список товарів на цій же сторінці\n  (назва, опис, ціна)\n• «Купити» одразу додає в кошик\n• Окремої сторінки товару немає" as Products
+  card "Про нас (#about)\n• Текст про виробництво\n• Статистика (50+ видів,\n  100% натуральні…)" as About
+  card "Якість (#quality)\n• Принципи / переваги" as Quality
+  card "Контакти (#contacts)\n• Адреса, години, телефон\n• Форма швидкого замовлення\n  (ім'я, телефон, що замовити)\n• Модалка: «Дякуємо за замовлення!\n  Ми зв'яжемося з вами…»" as Contacts
+  card "Footer" as Footer
+}
+
+rectangle "Авторизація" as Auth {
+  card "Увійти (/login)\nemail + пароль" as Login
+  card "Реєстрація (/register)\nім'я, email, телефон, пароль" as Register
+}
+
+rectangle "Покупки" as Shop {
+  card "Кошик (/cart)\n• Список позицій\n• ± кількість, видалити\n• Сума\n• Оформити замовлення" as Cart
+  card "Оформлення (/order)\n• Ім'я, телефон\n• Самовивіз / доставка + адреса\n• Коментар\n• Підтвердження замовлення" as Order
+}
+
+rectangle "Кабінет (/cabinet або /profile)" as Cabinet {
+  card "Вкладка «Замовлення»\nісторія, статус, склад, сума" as TabOrders
+  card "Вкладка «Мій профіль»\nім'я, телефон, місто,\nдень народження,\nгастрономічні вподобання (теги)" as TabProfile
+  card "Вкладка «Акції»\n4 пропозиції (UI):\n• Знижка на ДН\n• М'ясний абонемент\n• Сирна п'ятниця\n• Кава в подарунок" as TabPromo
+}
+
+' --- Порядок секцій на головній ---
+Header -down-> Hero
+Hero -down-> Products
+Products -down-> About
+About -down-> Quality
+Quality -down-> Contacts
+Contacts -down-> Footer
+
+Guest --> Home
+Buyer --> Home
+
+' --- Гість ---
+Guest --> Products : переглядає асортимент
+Guest --> Cart : відкриває кошик
+Guest --> Contacts : швидке замовлення\n(без логіну)
+Guest --> Login : Увійти
+Guest --> Register : Реєстрація
+Login --> Register : немає акаунту?
+Register --> Login : вже є акаунт?
+Login --> Home : успішний вхід
+Register --> Home : після реєстрації
+
+' --- Кошик і замовлення ---
+Products --> Cart : «Купити»\n(без переходу\nна іншу сторінку)
+Cart --> Login : оформити,\nякщо не ввійшов
+Cart --> Order : оформити\n(авторизований)
+Order --> TabOrders : з’являється\nв історії
+Order --> Cart : кошик очищено
+
+' --- Кабінет ---
+Buyer --> Cabinet : Мій кабінет
+Cabinet --> TabOrders
+Cabinet --> TabProfile
+Cabinet --> TabPromo
+Header --> Cabinet : dropdown\n«Мій кабінет»
+Header --> Cart : іконка кошика
+Header --> Login : Увійти\n(гість)
+
+note bottom of Products
+  У коді проєкту front_end: лістинг лише на головній.
+  Окремої сторінки товару немає.
+end note
+
+note bottom of Contacts
+  Після submit — вікно подяки
+  і кнопка «Нове замовлення».
+end note
+
+note bottom of TabProfile
+  Поле «день народження» є в профілі.
+  Автознижка −15% при checkout
+end note
+
+note right of Header
+  Якірні пункти меню скролять
+  секції головної.
+  Кошик / Увійти / Кабінет —
+  окремі маршрути.
+end note
+
+@enduml

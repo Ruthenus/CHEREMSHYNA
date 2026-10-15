@@ -1,0 +1,82 @@
+@startuml
+!theme vibrant
+title Гастроном «Черемшина» — діаграма розгортання\n(як у коді; прод — той самий домен)
+skinparam BackgroundColor #fdf6e3
+skinparam FontColor #000000
+skinparam ArrowColor #005f87
+skinparam BorderColor #000000
+skinparam NodeBackgroundColor #eee8d5
+skinparam NodeBorderColor #005f87
+skinparam ComponentBackgroundColor #fdf6e3
+skinparam ComponentBorderColor #d70000
+skinparam DatabaseBackgroundColor #eee8d5
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 15
+skinparam TitleFontSize 20
+skinparam NoteFontSize 13
+
+node "Пристрій користувача" as Client {
+  component [Браузер\nChrome / Firefox / Safari] as Browser
+  component [React-додаток\nVite build, static JS/CSS] as SPA
+  database "localStorage\ncheremshyna_token\ncheremshyna_refresh\ncheremshyna_cart" as LSclient
+  Browser --> SPA : завантажує SPA
+  SPA --> LSclient : токени і кошик
+}
+
+node "Хост фронтенду\n(dev: Vite :62550\nprod: nginx, той самий домен)" as FEHost {
+  component [index.html + bundle\nReact Router, AuthContext,\nProducts, Cart, Order, Cabinet] as FEBuild
+}
+
+node "Хост бекенду\n(dev: runserver :8000\nprod: gunicorn за nginx)" as BEHost {
+  component [Django 6.1 + DRF] as Django
+  component [Auth\n/api/auth/\nregister, login, refresh,\nme, logout] as Auth
+  component [Каталог\n/api/categories/\n/api/products/] as Catalog
+  component [Замовлення\n/api/orders/\nlist, create, preview,\nquick, detail] as Orders
+  component [Акції\n/api/promotions/promos/] as Promo
+  component [Health і схема\n/api/health/\n/api/docs/ /api/redoc/] as Docs
+  component [Django Admin\n/admin/] as Admin
+  Django --> Auth
+  Django --> Catalog
+  Django --> Orders
+  Django --> Promo
+  Django --> Docs
+  Django --> Admin
+}
+
+node "База даних" as DBNode {
+  database "SQLite\ndb.sqlite3\n(у проді можна Postgres)" as DB
+}
+
+cloud "Медіа" as Media {
+  component [Зображення товарів\n/media/ → MEDIA_ROOT] as Img
+}
+
+Browser --> FEHost : HTTP(S)\nGET статики
+SPA --> Django : JSON\nAuthorization: Bearer <access>\n(dev: проксі Vite /api і /media)
+Django --> DB : ORM
+Django --> Img : віддача файлів
+Admin --> DB : CRUD
+Admin --> Img : завантаження фото
+
+note right of SPA
+  Кошика /api/cart/ немає.
+  Ціну в POST /api/orders/
+  клієнт не передає:
+  її рахує сервер.
+end note
+
+note bottom of Django
+  Dev: Vite :62550 проксює
+  /api і /media на :8000.
+  Prod: nginx віддає збірку
+  і /api з того ж домену.
+  VITE_API_BASE_URL порожній.
+end note
+
+note bottom of DB
+  Зараз у settings — SQLite.
+  Повторний seed_data
+  оновлює демо за external_id.
+end note
+
+@enduml
