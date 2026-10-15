@@ -1,0 +1,69 @@
+@startuml OrderStateDiagram
+title Гастроном «Черемшина» — стани замовлення\nполе Order.status, підписи як у кабінеті
+
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam roundCorner 8
+skinparam state {
+  BackgroundColor #F5E6D3
+  BorderColor #8c2240
+  FontColor #1a0508
+  StartColor #8c2240
+  EndColor #8c2240
+}
+skinparam arrow {
+  Color #5c2b2f
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+  FontColor #1a0508
+}
+
+[*] --> New
+
+state "Нове" as New
+state "Підтверджено" as Confirmed
+state "В обробці" as Processing
+state "Доставляється" as Shipping
+state "Доставлено" as Delivered
+state "Скасовано" as Cancelled
+
+New --> Confirmed
+Confirmed --> Processing
+Processing --> Shipping
+Shipping --> Delivered
+Delivered --> [*]
+
+New --> Cancelled
+Confirmed --> Cancelled
+Processing --> Cancelled
+Shipping --> Cancelled
+Cancelled --> [*]
+
+note right of New
+  Сюди потрапляють обидва створення:
+  POST /api/orders/ (is_quick=False)
+  і POST /api/orders/quick/ (is_quick=True).
+  Значення в базі — new.
+  Кабінет показує український підпис
+  через get_status_display.
+end note
+
+note bottom of Confirmed
+  Покупець статус не змінює.
+  Окремого API для переходу немає.
+  Далі статус виставляє лише /admin/.
+  У моделі це choices без графа:
+  код не забороняє стрибок через крок.
+  Стрілки — робочий порядок, не валідатор.
+end note
+
+note bottom of Delivered
+  Напис «Замовлення прийнято»
+  на екрані після оформлення —
+  не цей стан і не «Підтверджено».
+  У ту ж секунду в базі ще «Нове».
+end note
+
+@enduml

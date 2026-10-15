@@ -1,0 +1,72 @@
+@startuml OrderCreationSequence
+title Оформлення замовлення — ціна і залишок рахує сервер
+
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam sequence {
+  ArrowColor #5c2b2f
+  LifeLineBorderColor #8c2240
+  ParticipantBackgroundColor #F5E6D3
+  ParticipantBorderColor #8c2240
+  ActorBackgroundColor #FFF8E7
+  ActorBorderColor #8c2240
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+}
+
+actor "Покупець" as User
+participant "Order.jsx\nAuthContext.addOrder" as FE
+participant "api.js" as API
+participant "OrderListCreateView" as View
+participant "_prepare_order\n_discount_for" as Calc
+database "Product" as Product
+database "Order\nOrderItem" as Order
+
+User -> FE : підтверджує кошик\nз localStorage
+FE -> API : POST /api/orders/\nitems: product_id, quantity\nціни в тілі немає
+API -> View : Authorization Bearer
+
+View -> Calc : злити однакові product_id
+Calc -> Product : лише is_available=True
+
+alt товару немає або кількість > 99
+  Calc --> View : помилка
+  View --> FE : 400
+else рядки зібрані
+  View -> Calc : знижка для цього user
+  note right of Calc
+    −15%, якщо has_birthday_discount.
+    Інакше в п'ятницю −10%
+    лише на slug cheeses.
+    Сума клієнта ігнорується.
+  end note
+  Calc --> View : subtotal, discount
+
+  View -> Product : select_for_update
+  alt stock < quantity
+    View --> FE : 400\nНедостатньо на складі: назви
+  else вистачає
+    View -> Product : stock -= quantity
+    View -> Order : Order + знімок\nname, price, unit
+    View --> API : 201\nfinal_total після знижки
+    API --> FE : тіло замовлення
+    FE -> API : GET /api/orders/
+    API --> FE : оновити кабінет
+  end
+end
+
+== Окремий шлях, не з кошика ==
+
+User -> API : POST /api/orders/quick/\nім'я, телефон, текст
+API -> Order : is_quick=True\nбез позицій і без stock
+Order --> User : 201 {id, detail: ok}
+
+note over View
+  POST /api/orders/preview/ рахує ту саму знижку
+  і нічого не записує.
+  GET /api/orders/<id>/ віддає лише замовлення цього user.
+end note
+
+@enduml

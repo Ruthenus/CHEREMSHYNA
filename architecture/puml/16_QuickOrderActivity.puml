@@ -1,0 +1,61 @@
+@startuml QuickOrderActivity
+title Гастроном «Черемшина» — швидке замовлення\nблок контактів на головній, без кошика
+
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam activity {
+  BackgroundColor #F5E6D3
+  BorderColor #8c2240
+  FontColor #1a0508
+  DiamondBackgroundColor #FFF8E7
+  DiamondBorderColor #8c2240
+  DiamondFontColor #1a0508
+  StartColor #8c2240
+  EndColor #8c2240
+}
+skinparam arrow {
+  Color #5c2b2f
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+  FontColor #1a0508
+}
+
+start
+:#contacts, форма «Швидке замовлення»;
+:Ім'я, телефон, текст заявки;
+
+if (Усі три поля заповнені?) then (так)
+else (ні)
+  :«Будь ласка, заповніть усі поля.»;
+  stop
+endif
+
+if (Телефон: 10–15 цифр?) then (так)
+else (ні)
+  :помилка номера, запит не йде;
+  stop
+endif
+
+:POST /api/orders/quick/\n{ name, phone, order };
+
+if (Сервер відповів 201?) then (так)
+  :форма замінюється підтвердженням\n«Дякуємо за замовлення!»;
+  note right
+    Вхід не потрібен.
+    stock не змінюється, позицій немає.
+    is_quick=True, статус «Нове».
+    Якщо токен уже був, заявка
+    прив'язується до користувача
+    і в кабінеті видно «Заявка», не 0 грн.
+    Гість у кабінеті її не побачить.
+  end note
+  :кнопка «Нове замовлення»\nзнову показує порожню форму;
+  stop
+else (ні)
+  :помилка на картці форми;
+  stop
+endif
+
+@enduml

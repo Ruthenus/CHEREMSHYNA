@@ -1,0 +1,150 @@
+@startuml Cheremshyna_Frontend_Components
+title Гастроном «Черемшина» — Діаграма компонентів фронтенду\n(стан 30.09.2026 коду в репозиторії)
+
+skinparam backgroundColor #FDFAF5
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam titleFontSize 18
+skinparam titleFontColor #1a0508
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam ArrowColor #5c2b2f
+skinparam ArrowThickness 1.2
+skinparam arrowFontSize 12
+skinparam arrowFontColor #3d1518
+
+skinparam component {
+  BackgroundColor #F5E6D3
+  BorderColor #8c2240
+  FontColor #1a0508
+  BorderThickness 1.5
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #5c2b2f
+  FontColor #1a0508
+  FontStyle bold
+  BorderThickness 1.5
+}
+skinparam database {
+  BackgroundColor #EDE0D4
+  BorderColor #8c2240
+  FontColor #1a0508
+}
+skinparam note {
+  BackgroundColor #FFF8E7
+  BorderColor #c4a574
+  FontColor #1a0508
+}
+
+actor "Користувач" as User
+
+package "Точка входу" {
+  component [main.jsx] as Main
+  component [App.jsx\n───\nBrowserRouter\ncart / setCart / addToCart] as App
+}
+
+package "Контекст автентифікації" {
+  component [AuthContext.jsx\n───\nAuthProvider\nuseAuth()\nlogin · register · logout\nupdateProfile · addOrder] as Auth
+}
+
+package "localStorage браузера" {
+  database "Сховище" as LS {
+    component [cheremshyna_cart] as KeyCart
+    component [cheremshyna_session] as KeySession
+    component [cheremshyna_users] as KeyUsers
+    component [cheremshyna_orders] as KeyOrders
+  }
+}
+
+package "Головна сторінка  /" {
+  component [Header\nменю · кошик · вхід] as Header
+  component [Hero] as Hero
+  component [Products\nкатегорії · список · «Купити»] as Products
+  component [Ticker] as Ticker
+  component [About] as About
+  component [Principles\n«Якість»] as Principles
+  component [Contacts\nшвидке замовлення] as Contacts
+  component [Footer] as Footer
+}
+
+package "Окремі маршрути" {
+  component [Login\n/login] as Login
+  component [Register\n/register] as Register
+  component [Cart\n/cart] as Cart
+  component [Order\n/order] as Order
+  component [Cabinet\n/profile · /cabinet] as Cabinet
+}
+
+' —— Збірка ——
+User --> Main : відкриває сайт
+Main --> App
+App --> Auth : обгортає дерево
+
+App --> Header
+App --> Hero
+App --> Products
+App --> Ticker
+App --> About
+App --> Principles
+App --> Contacts
+App --> Footer
+
+App --> Login
+App --> Register
+App --> Cart
+App --> Order
+App --> Cabinet
+
+' —— Кошик (стан у App) ——
+App --> KeyCart : read / write
+Products -down-> App : addToCart(product)
+Cart -down-> App : setCart(...)
+Order -down-> App : setCart після\nоформлення
+Header -down-> App : prop cart\n(лічильник)
+
+' —— Auth ——
+Auth --> KeySession
+Auth --> KeyUsers
+Auth --> KeyOrders
+
+Header --> Auth : user, logout
+Login --> Auth : login()
+Register --> Auth : register()
+Cart --> Auth : чи є user?
+Order --> Auth : addOrder()
+Cabinet --> Auth : user, orders,\nupdateProfile()
+
+' —— Навігація (UX) ——
+Header ..> Cart : іконка
+Header ..> Login : Увійти
+Header ..> Cabinet : Кабінет
+Cart ..> Login : гість → login
+Cart ..> Order : оформлення
+Order ..> Cabinet : історія
+
+note right of Auth
+  Без API / JWT.
+  Усі користувачі та
+  історія замовлень
+  лише в localStorage.
+end note
+
+note bottom of Products
+  mock-дані в компоненті.
+  Окремої сторінки
+  товару немає.
+end note
+
+note bottom of Contacts
+  Форма + модалка «Дякуємо».
+  Не викликає addOrder
+  і не пише в cheremshyna_orders.
+end note
+
+note top of KeyCart
+  Кошик належить App,
+  не AuthContext.
+end note
+
+@enduml
