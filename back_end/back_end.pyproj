@@ -69,6 +69,21 @@
     <Compile Include="promotions\urls.py" />
     <Compile Include="promotions\views.py" />
     <Compile Include="promotions\__init__.py" />
+    <Compile Include="tests\helpers.py" />
+    <Compile Include="tests\test_nonfunctional.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_system.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_functional_orders.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_functional_catalog.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_functional_auth.py" />
+    <Compile Include="tests\__init__.py" />
     <Compile Include="users\admin.py" />
     <Compile Include="users\apps.py" />
     <Compile Include="users\authentication.py" />
@@ -157,6 +172,7 @@
     <Folder Include="catalog\__pycache__\" />
     <Folder Include="config\" />
     <Folder Include="config\__pycache__\" />
+    <Folder Include="tests\" />
     <Folder Include="orders\" />
     <Folder Include="orders\migrations\" />
     <Folder Include="orders\migrations\__pycache__\" />
