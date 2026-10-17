@@ -37,8 +37,20 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 
-                               'localhost,127.0.0.1').split(',')
+def _csv(name, default=''):
+    """Список із змінної середовища: коми, без порожніх країв."""
+    raw = os.environ.get(name, default)
+    return [item.strip() for item in raw.split(',') if item.strip()]
+
+
+ALLOWED_HOSTS = _csv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+
+# nginx знімає HTTPS і передає X-Forwarded-Proto.
+# Без цього Django бачить запит як HTTP і ламає адмінку.
+CSRF_TRUSTED_ORIGINS = _csv('DJANGO_CSRF_TRUSTED_ORIGINS')
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # Application references
 # https://docs.djangoproject.com/en/2.1/ref/settings/#std:setting-INSTALLED_APPS
@@ -154,8 +166,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS
 # Широко відкрито лише поки DEBUG (локальна здача).
-# HSTS, редірект на HTTPS і secure-cookie тут не вмикаємо: 
-# проєкт здається по HTTP, інакше адмінка і Vite перестають відкриватися.
+# HSTS і редірект на HTTPS лишаються на nginx.
+# Secure-cookie вмикається лише коли DEBUG=False.
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 if not DEBUG:
     CORS_ALLOWED_ORIGINS = [
